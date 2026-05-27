@@ -1,0 +1,125 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { doc, setDoc } from 'firebase/firestore'
+import { Link, Navigate, useLocation } from 'react-router-dom'
+import SectionHeader from '../components/SectionHeader'
+import { useAuth } from '../contexts/useAuth'
+import { db } from '../firebase'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useStudentProfile } from '../hooks/useStudentProfile'
+import type { ClubApplication, StudentProfile } from '../types'
+import { isAdminEmail } from '../utils/permissions'
+
+const emptyForm = {
+  grade: '1',
+  classNumber: '1',
+  number: '',
+  name: '',
+}
+
+function Register() {
+  const { user } = useAuth()
+  const location = useLocation()
+  const { profile, loading: profileLoading } = useStudentProfile()
+  const [profiles, setProfiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
+  const [applications] = useLocalStorage<ClubApplication[]>('dimigo-club-applications', [])
+  const savedApplication = applications.find((application) => application.email === user?.email)
+  const [form, setForm] = useState(emptyForm)
+  const [message, setMessage] = useState('')
+  const state = location.state as { from?: { pathname?: string } } | null
+  const redirectTo = state?.from?.pathname === '/register' ? '/' : state?.from?.pathname ?? '/'
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (!user?.email) {
+      setMessage('로그인 정보를 확인할 수 없습니다.')
+      return
+    }
+
+    const profile: StudentProfile = {
+      email: user.email,
+      name: form.name.trim(),
+      grade: form.grade,
+      classNumber: form.classNumber.trim(),
+      number: form.number.trim(),
+      createdAt: new Date().toISOString().slice(0, 10),
+    }
+
+    setProfiles([profile, ...profiles.filter((item) => item.email !== user.email)])
+
+    if (db) {
+      await setDoc(doc(db, 'studentProfiles', user.email), profile, { merge: true })
+      setMessage('회원가입 정보가 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
+      return
+    }
+
+    setMessage('회원가입 정보가 이 브라우저에 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
+  }
+
+  if (isAdminEmail(user?.email)) {
+    return <Navigate to="/admin" replace />
+  }
+
+  if (profileLoading) {
+    return <section className="page-section"><div className="auth-card"><p>학생 정보를 확인하고 있습니다.</p></div></section>
+  }
+
+  if (profile) {
+    return <Navigate to="/mypage" replace />
+  }
+
+  return (
+    <section className="page-section">
+      <SectionHeader
+        eyebrow="Student Registration"
+        title="회원가입"
+        description="동아리 지원과 평가 참여에 사용할 학생 정보를 등록합니다."
+      />
+      <div className="two-column">
+        <form className="form-card" onSubmit={handleSubmit}>
+          <h3>학생 정보 입력</h3>
+          <label>
+            <span>학년</span>
+            <select required value={form.grade} onChange={(event) => setForm({ ...form, grade: event.target.value })}>
+              <option value="1">1학년</option>
+              <option value="2">2학년</option>
+              <option value="3">3학년</option>
+            </select>
+          </label>
+          <label><span>반</span><input required inputMode="numeric" maxLength={2} value={form.classNumber} onChange={(event) => setForm({ ...form, classNumber: event.target.value })} /></label>
+          <label><span>번호</span><input required inputMode="numeric" maxLength={2} value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} /></label>
+          <label><span>이름</span><input required maxLength={20} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
+          <button className="primary-button" type="submit">
+            회원가입 정보 저장
+          </button>
+          {message && <p className="success-message">{message}</p>}
+          {message && <Link className="secondary-button" to={redirectTo}>계속하기</Link>}
+        </form>
+        <div className="panel-card">
+          <h3>내 정보</h3>
+          <p>회원가입 정보는 최초 등록 후 마이페이지에서 수정할 수 있습니다.</p>
+          <h3>동아리 지원 상태</h3>
+          {savedApplication ? (
+            <article className="mini-card">
+              <strong>지원 완료</strong>
+              <ol className="choice-list">
+                <li>1순위: {savedApplication.firstChoice}</li>
+                <li>2순위: {savedApplication.secondChoice}</li>
+                <li>3순위: {savedApplication.thirdChoice}</li>
+              </ol>
+            </article>
+          ) : (
+            <div className="mini-card">
+              <strong>아직 동아리에 지원하지 않았습니다.</strong>
+              <p>지원하러 가기를 누르면 동아리 지원 페이지로 이동합니다.</p>
+              <Link className="primary-button" to="/clubs">지원하러 가기</Link>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+export default Register

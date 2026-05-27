@@ -1,0 +1,68 @@
+import { useState } from 'react'
+import { NavLink } from 'react-router-dom'
+import { useAuth } from '../contexts/useAuth'
+import { useStudentProfile } from '../hooks/useStudentProfile'
+import { isAdminEmail } from '../utils/permissions'
+import AuthButton from './AuthButton'
+
+const navigation = [
+  { to: '/', label: '홈' },
+  { to: '/members', label: '학생회 소개' },
+  { to: '/register', label: '회원가입' },
+  { to: '/evaluation', label: '평가제' },
+  { to: '/clubs', label: '동아리 지원' },
+  { to: '/suggestions', label: '정책 제안' },
+  { to: '/progress', label: '진행 현황' },
+]
+
+type LayoutProps = {
+  children: React.ReactNode
+}
+
+function Layout({ children }: LayoutProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const { user } = useAuth()
+  const { profile } = useStudentProfile()
+  const isAdmin = isAdminEmail(user?.email)
+  const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
+  const extraNavigation = user ? [
+    { to: '/club-dashboard', label: '동아리 관리' },
+    ...(isAdmin ? [{ to: '/admin', label: '관리자' }] : []),
+  ] : []
+  const visibleNavigation = [...baseNavigation, ...extraNavigation]
+
+  return (
+    <div className="site-shell">
+      <a className="skip-link" href="#main-content">본문 바로가기</a>
+      <header className="topbar">
+        <NavLink to="/" className="brand" onClick={() => setIsOpen(false)}>
+          <span className="brand-mark">
+            <img src="/dimigo-logo.jpg" alt="디미고 로고" />
+          </span>
+          <span>
+            <strong>한국디지털미디어고 학생자치회</strong>
+            <small>Student Council</small>
+          </span>
+        </NavLink>
+        <button className="menu-button" type="button" aria-controls="primary-navigation" aria-expanded={isOpen} onClick={() => setIsOpen((open) => !open)}>
+          {isOpen ? '닫기' : '메뉴'}
+        </button>
+        <nav id="primary-navigation" className={`nav ${isOpen ? 'open' : ''}`} aria-label="주요 메뉴">
+          {visibleNavigation.map((item) => (
+            <NavLink key={item.to} to={item.to} onClick={() => setIsOpen(false)}>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+        <AuthButton />
+      </header>
+      <main id="main-content">{children}</main>
+      <footer className="footer">
+        <strong>한국디지털미디어고등학교 학생자치회</strong>
+        <span>투명한 운영, 빠른 소통, 신뢰받는 학생 대표 기구</span>
+      </footer>
+    </div>
+  )
+}
+
+export default Layout

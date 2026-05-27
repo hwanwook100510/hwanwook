@@ -1,0 +1,174 @@
+import { useEffect, useState } from 'react'
+import type { FormEvent } from 'react'
+import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import SectionHeader from '../components/SectionHeader'
+import { useAuth } from '../contexts/useAuth'
+import { clubs } from '../data/clubs'
+import { db } from '../firebase'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import type { ClubApplication, ClubIntro, ClubRoleAssignment } from '../types'
+
+function getPriority(application: ClubApplication, club: string) {
+  if (application.firstChoice === club) return '1순위'
+  if (application.secondChoice === club) return '2순위'
+  if (application.thirdChoice === club) return '3순위'
+  return ''
+}
+
+function ClubDashboard() {
+  const { user } = useAuth()
+  const userEmail = user?.email
+  const [assignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
+  const [applications] = useLocalStorage<ClubApplication[]>('dimigo-club-applications', [])
+  const [intros, setIntros] = useLocalStorage<ClubIntro[]>('dimigo-club-intros', [])
+  const [remoteAssignments, setRemoteAssignments] = useState<ClubRoleAssignment[]>(db ? [] : assignments)
+  const [remoteApplications, setRemoteApplications] = useState<ClubApplication[]>(db ? [] : applications)
+  const [remoteIntros, setRemoteIntros] = useState<ClubIntro[]>(db ? [] : intros)
+  const assignment = remoteAssignments.find((item) => item.email === userEmail)
+  const club = clubs.find((item) => item.name === assignment?.club)
+  const savedIntro = remoteIntros.find((intro) => intro.club === assignment?.club)
+  const [intro, setIntro] = useState(savedIntro?.intro ?? '')
+
+  useEffect(() => {
+    if (!db || !userEmail) {
+      return
+    }
+
+    async function loadClubData() {
+      const assignmentSnapshot = await getDoc(doc(db!, 'clubRoleAssignments', userEmail!))
+
+      if (!assignmentSnapshot.exists()) {
+        setRemoteAssignments([])
+        setRemoteApplications([])
+        setRemoteIntros([])
+        return
+      }
+
+      const loadedAssignment = assignmentSnapshot.data() as ClubRoleAssignment
+      const assignedClub = clubs.find((item) => item.name === loadedAssignment.club)
+
+      if (!assignedClub) {
+        setRemoteAssignments([])
+        setRemoteApplications([])
+        setRemoteIntros([])
+        return
+      }
+
+      const [firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot, introSnapshot] = await Promise.all([
+        getDocs(query(collection(db!, 'clubApplications'), where('firstChoice', '==', assignedClub.name))),
+        getDocs(query(collection(db!, 'clubApplications'), where('secondChoice', '==', assignedClub.name))),
+        getDocs(query(collection(db!, 'clubApplications'), where('thirdChoice', '==', assignedClub.name))),
+        getDoc(doc(db!, 'clubIntros', assignedClub.name)),
+      ])
+
+      const applicationMap = new Map<number, ClubApplication>()
+      ;[firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot].forEach((snapshot) => {
+        snapshot.docs.forEach((item) => {
+          const application = item.data() as ClubApplication
+          applicationMap.set(application.id, application)
+        })
+      })
+
+      const loadedIntro = introSnapshot.exists() ? introSnapshot.data() as ClubIntro : null
+
+      setRemoteAssignments([loadedAssignment])
+      setRemoteApplications(Array.from(applicationMap.values()))
+      setRemoteIntros(loadedIntro ? [loadedIntro] : [])
+
+      if (loadedIntro) {
+        setIntro(loadedIntro.intro)
+      }
+    }
+
+    void loadClubData()
+  }, [userEmail])
+
+  if (!assignment || !club) {
+    return (
+      <section className="page-section">
+        <SectionHeader
+          eyebrow="Club Management"
+          title="동아리 권한이 없습니다"
+          description="관리자가 동아리원 또는 동아리장 지위를 부여하면 이 페이지에서 지원서를 볼 수 있습니다."
+        />
+      </section>
+    )
+  }
+
+  const clubApplications = remoteApplications.filter((application) => getPriority(application, club.name))
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const nextIntro: ClubIntro = {
+      club: club.name,
+      intro: intro.trim(),
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }
+
+    const nextIntros = [nextIntro, ...remoteIntros.filter((item) => item.club !== club.name)]
+    setRemoteIntros(nextIntros)
+    setIntros(nextIntros)
+
+    if (db) {
+      await setDoc(doc(db, 'clubIntros', club.name), nextIntro, { merge: true })
+    }
+  }
+
+  return (
+    <section className="page-section">
+      <SectionHeader
+        eyebrow="Club Management"
+        title={`${club.name} 관리`}
+        description={`${assignment.role} 권한으로 동아리 소개와 지원 현황을 확인합니다.`}
+      />
+      <div className="two-column">
+        <div className="panel-card">
+          <h3>{club.name}</h3>
+          <p>{club.activity}</p>
+          <div className="student-summary large">
+            <span>내 지위</span>
+            <strong>{assignment.role}</strong>
+          </div>
+          <h3>현재 소개글</h3>
+          <p>{savedIntro?.intro || '아직 등록된 소개글이 없습니다.'}</p>
+        </div>
+        {assignment.role === '동아리장' ? (
+          <form className="form-card" onSubmit={handleSubmit}>
+            <h3>동아리 소개글 수정</h3>
+            <label>
+              <span>소개글</span>
+              <textarea rows={8} maxLength={1500} value={intro} onChange={(event) => setIntro(event.target.value)} placeholder="동아리 소개글을 작성하세요." />
+            </label>
+            <button className="primary-button" type="submit">소개글 저장</button>
+          </form>
+        ) : (
+          <div className="form-card">
+            <h3>동아리원 권한</h3>
+            <p>동아리원은 지원서 확인이 가능하고, 소개글 수정은 동아리장만 할 수 있습니다.</p>
+          </div>
+        )}
+      </div>
+      <section className="content-section">
+        <SectionHeader title="우리 동아리 지원서" description="1순위, 2순위, 3순위 중 우리 동아리를 선택한 지원자 명단입니다." />
+        <div className="admin-list">
+          {clubApplications.length === 0 ? <p>아직 이 동아리에 들어온 지원서가 없습니다.</p> : clubApplications.map((application) => (
+            <article className="admin-row" key={application.id}>
+              <div>
+                <strong>{application.name}</strong>
+                <span>{application.grade}학년 {application.classNumber}반 {application.number}번 · {getPriority(application, club.name)} · {application.createdAt}</span>
+              </div>
+              <ol className="choice-list">
+                <li>1순위: {application.firstChoice}</li>
+                <li>2순위: {application.secondChoice}</li>
+                <li>3순위: {application.thirdChoice}</li>
+              </ol>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  )
+}
+
+export default ClubDashboard
