@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -17,8 +17,35 @@ const MyPage = lazy(() => import('./pages/MyPage'))
 const PolicyProgress = lazy(() => import('./pages/PolicyProgress'))
 const Register = lazy(() => import('./pages/Register'))
 const Suggestions = lazy(() => import('./pages/Suggestions'))
+const Vote = lazy(() => import('./pages/Vote'))
 
 function App() {
+  useEffect(() => {
+    const blockShortcuts = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase()
+      const blocked = event.key === 'F12'
+        || (event.ctrlKey && event.shiftKey && ['i', 'j', 'c'].includes(key))
+        || (event.ctrlKey && ['s', 'u'].includes(key))
+
+      if (blocked) {
+        event.preventDefault()
+        event.stopPropagation()
+      }
+    }
+
+    const blockContextMenu = (event: MouseEvent) => {
+      event.preventDefault()
+    }
+
+    window.addEventListener('keydown', blockShortcuts)
+    window.addEventListener('contextmenu', blockContextMenu)
+
+    return () => {
+      window.removeEventListener('keydown', blockShortcuts)
+      window.removeEventListener('contextmenu', blockContextMenu)
+    }
+  }, [])
+
   return (
     <Layout>
       <Suspense fallback={<div className="auth-card route-loading"><p>페이지를 불러오고 있습니다.</p></div>}>
@@ -31,6 +58,7 @@ function App() {
           <Route path="/club-dashboard" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
           <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
           <Route path="/evaluation" element={<ProtectedRoute><Evaluation /></ProtectedRoute>} />
+          <Route path="/vote" element={<ProtectedRoute><Vote /></ProtectedRoute>} />
           <Route path="/clubs" element={<ProtectedRoute><ClubSupport /></ProtectedRoute>} />
           <Route path="/clubs/list" element={<ProtectedRoute><ClubList /></ProtectedRoute>} />
           <Route path="/clubs/select/:priority" element={<ProtectedRoute><ClubSelect /></ProtectedRoute>} />

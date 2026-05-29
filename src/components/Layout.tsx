@@ -1,18 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { doc, getDoc } from 'firebase/firestore'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
+import { db } from '../firebase'
+import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
+import type { ClubRoleAssignment } from '../types'
 import { isAdminEmail } from '../utils/permissions'
 import AuthButton from './AuthButton'
 
 const navigation = [
   { to: '/', label: '홈' },
   { to: '/members', label: '학생회 소개' },
-  { to: '/register', label: '회원가입' },
-  { to: '/evaluation', label: '평가제' },
+  { to: '/evaluation', label: '학생회 평가' },
   { to: '/clubs', label: '동아리 지원' },
   { to: '/suggestions', label: '정책 제안' },
-  { to: '/progress', label: '진행 현황' },
+  { to: '/vote', label: '투표' },
+  { to: '/progress', label: '공약 진행 현황' },
 ]
 
 type LayoutProps = {
@@ -23,12 +27,32 @@ function Layout({ children }: LayoutProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { user } = useAuth()
   const { profile } = useStudentProfile()
+  const [assignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
+  const [remoteClubPermission, setRemoteClubPermission] = useState<{ email: string, hasPermission: boolean } | null>(null)
   const isAdmin = isAdminEmail(user?.email)
+  const userEmail = user?.email
+  const hasLocalClubPermission = Boolean(userEmail && assignments.some((item) => item.email === userEmail))
+  const hasRemoteClubPermission = Boolean(userEmail && remoteClubPermission?.email === userEmail && remoteClubPermission.hasPermission)
+  const hasClubPermission = hasLocalClubPermission || hasRemoteClubPermission
+
+  useEffect(() => {
+    if (!db || !userEmail) {
+      return
+    }
+
+    async function loadPermission() {
+      const snapshot = await getDoc(doc(db!, 'clubRoleAssignments', userEmail!))
+      setRemoteClubPermission({ email: userEmail!, hasPermission: snapshot.exists() })
+    }
+
+    void loadPermission()
+  }, [userEmail])
+
   const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
-  const extraNavigation = user ? [
-    { to: '/club-dashboard', label: '동아리 관리' },
+  const extraNavigation = [
+    ...(hasClubPermission ? [{ to: '/club-dashboard', label: '동아리 관리' }] : []),
     ...(isAdmin ? [{ to: '/admin', label: '관리자' }] : []),
-  ] : []
+  ]
   const visibleNavigation = [...baseNavigation, ...extraNavigation]
 
   return (
@@ -40,8 +64,8 @@ function Layout({ children }: LayoutProps) {
             <img src="/dimigo-logo.jpg" alt="디미고 로고" />
           </span>
           <span>
-            <strong>한국디지털미디어고 학생자치회</strong>
-            <small>Student Council</small>
+            <strong>DIMIGO</strong>
+            <small>학생회</small>
           </span>
         </NavLink>
         <button className="menu-button" type="button" aria-controls="primary-navigation" aria-expanded={isOpen} onClick={() => setIsOpen((open) => !open)}>
@@ -54,7 +78,10 @@ function Layout({ children }: LayoutProps) {
             </NavLink>
           ))}
         </nav>
-        <AuthButton />
+        <div className="topbar-actions">
+          <span className="topbar-divider" aria-hidden="true">|</span>
+          <AuthButton />
+        </div>
       </header>
       <main id="main-content">{children}</main>
       <footer className="footer">

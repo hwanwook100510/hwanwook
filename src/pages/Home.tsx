@@ -1,149 +1,68 @@
 import { Link } from 'react-router-dom'
-import SectionHeader from '../components/SectionHeader'
-import { notices, progressItems, schedules, summary } from '../data/mockData'
 
-const quickLinks = [
-  { to: '/progress', title: '공약 진행 현황', description: '공약과 학생 제안의 상태를 투명하게 확인합니다.', meta: '실시간 공개', note: '회의 후 업데이트' },
-  { to: '/suggestions', title: '정책 제안하기', description: '학교생활 개선 아이디어를 학생회에 전달합니다.', meta: '학생 의견 접수', note: '익숙한 불편부터' },
-  { to: '/clubs', title: '동아리 지원', description: '지원 기간, 방법, 제출 서류를 한눈에 확인합니다.', meta: '모집 일정 안내', note: '지원 전 체크' },
-]
-
-const completedCount = progressItems.filter((item) => item.status === '완료').length
-const runningCount = progressItems.filter((item) => item.status === '실행 중' || item.status === '허가').length
-const reviewCount = progressItems.length - completedCount - runningCount
+const policyPlaceholders = Array.from({ length: 4 }, (_, index) => index)
 
 function Home() {
   return (
-    <>
-      <section className="hero-section">
-        <div className="hero-copy">
-          <span className="eyebrow">DIMIGO Student Council</span>
-          <h1>학생의 목소리를 학교의 변화로 연결합니다.</h1>
-          <p>
-            한국디지털미디어고등학교 학생자치회는 공약 이행, 정책 제안, 동아리 활동 지원을 투명하게 공개하며 학생 중심의 학교 문화를 만들어갑니다.
-          </p>
-          <div className="hero-actions">
-            <Link className="primary-button" to="/suggestions">정책 제안하기</Link>
-            <Link className="secondary-button" to="/progress">진행 현황 보기</Link>
-          </div>
-          <div className="hero-trust" aria-label="학생회 운영 특징">
-            <span>월간 공개</span>
-            <span>담당 부서 명시</span>
-            <span>진행 단계 추적</span>
-          </div>
-          <aside className="hero-note" aria-label="이번 주 운영 메모">
-            <strong>이번 주 집중</strong>
-            <p>5월 접수 의견 중 급식, 동아리 공간, 공지 누락 안건을 먼저 검토합니다.</p>
-          </aside>
+    <div className="home-page">
+      <section className="home-hero">
+        <div className="home-hero-copy">
+          <h1>함께 만드는<br />더 나은 <span>디미고</span></h1>
+          <p>여러분의 목소리가 학교를 변화시킵니다.</p>
+          <p>소통하고, 제안하고, 함께 성장하는 디미고 학생회가 되겠습니다.</p>
+          <Link className="home-outline-button" to="/members">자세히 보기</Link>
         </div>
-        <div className="hero-panel">
-          <span className="eyebrow">Council Dashboard</span>
-          <strong>2026 학생자치회 운영 원칙</strong>
+      </section>
+
+      <section className="home-top-grid" aria-label="주요 안내">
+        <article className="home-promise-card">
+          <span>우리의 약속</span>
+          <strong>홍보 · 소통 · 변화</strong>
+          <p>학생 한 사람, 한 사람의 목소리를 존중하며 더 나은 학교를 만들어갑니다.</p>
+          <Link to="/members">학생회 소개 바로가기</Link>
+        </article>
+
+        <article className="home-card vote-card">
+          <div className="home-card-head">
+            <h2>오늘의 투표</h2>
+            <Link to="/vote">더보기</Link>
+          </div>
+          <div className="vote-empty-box" aria-hidden="true" />
+          <Link className="home-solid-button" to="/vote">투표하러 가기</Link>
+        </article>
+      </section>
+
+      <section className="home-lower-grid">
+        <article className="home-card schedule-card-home featured-schedule-card">
+          <div className="home-card-head">
+            <h2>다가오는 일정</h2>
+          </div>
           <ul>
-            <li>월간 회의록과 공약 현황 공개</li>
-            <li>학생 제안 접수 및 검토 결과 안내</li>
-            <li>동아리와 학급 의견을 반영한 행사 운영</li>
-          </ul>
-          <div className="hero-metric">
-            <span>이번 달 학생 의견 반영 안건</span>
-            <strong>12건</strong>
-          </div>
-        </div>
-      </section>
-
-      <section className="summary-grid">
-        <article className="summary-card">
-          <span>관리 중인 공약</span>
-          <strong>{summary.pledgeCount}개</strong>
-          <p>공약별 현재 단계를 공개합니다.</p>
-        </article>
-        <article className="summary-card">
-          <span>진행 중인 정책</span>
-          <strong>{summary.activePolicies}건</strong>
-          <p>부서별 담당자가 최신 현황을 업데이트합니다.</p>
-        </article>
-        <article className="summary-card">
-          <span>접수된 제안</span>
-          <strong>{summary.suggestions}건</strong>
-          <p>정책 제안 페이지를 통해 접수된 의견을 검토합니다.</p>
-        </article>
-      </section>
-
-      <section className="status-board" aria-label="공약 처리 상태 요약">
-        <article>
-          <span>완료</span>
-          <strong>{completedCount}</strong>
-          <p>실행이 끝난 공약</p>
-        </article>
-        <article>
-          <span>실행/허가</span>
-          <strong>{runningCount}</strong>
-          <p>바로 움직이는 안건</p>
-        </article>
-        <article>
-          <span>검토 중</span>
-          <strong>{reviewCount}</strong>
-          <p>논의와 구체화 단계</p>
-        </article>
-      </section>
-
-      <section className="content-section">
-        <SectionHeader title="학생회 소식" description="회의록, 모집, 설문 등 지금 확인해야 할 학생자치회 공지를 모았습니다." />
-        <div className="notice-grid">
-          {notices.map((notice) => (
-            <article className="notice-item" key={notice.id}>
+            <li>
+              <time><strong>15</strong><span>6월</span></time>
               <div>
-                <span>{notice.category}</span>
-                <small>{notice.date}</small>
+                <b>중요 일정</b>
+                <strong>학생회 투표일</strong>
+                <small>6월 15일 월요일 7교시</small>
               </div>
-              <h3>{notice.title}</h3>
-              <p>{notice.summary}</p>
-            </article>
+            </li>
+          </ul>
+        </article>
+      </section>
+
+      <section className="home-section">
+        <div className="home-section-head">
+          <h2>주요 공약</h2>
+          <Link to="/progress">자세히 보기</Link>
+        </div>
+        <div className="policy-grid">
+          {policyPlaceholders.map((placeholder) => (
+            <article className="policy-card policy-card-empty" key={placeholder} aria-hidden="true" />
           ))}
         </div>
       </section>
 
-      <section className="content-section">
-        <SectionHeader title="핵심 메뉴" description="학생들이 가장 자주 찾는 기능을 빠르게 이동할 수 있도록 구성했습니다." />
-        <div className="card-grid three">
-          {quickLinks.map((link) => (
-            <Link className="link-card" to={link.to} key={link.to}>
-              <span className="link-meta">{link.meta}</span>
-              <h3>{link.title}</h3>
-              <p>{link.description}</p>
-              <small>{link.note}</small>
-              <span className="link-action">바로가기</span>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      <section className="content-section muted-section">
-        <SectionHeader title="이번 달 운영 현황" description="진행 중인 정책과 주요 일정을 함께 확인할 수 있습니다." />
-        <div className="split-list">
-          <div className="compact-list">
-            {progressItems.slice(0, 3).map((item) => (
-              <article key={item.id}>
-                <span>{item.type}</span>
-                <strong>{item.title}</strong>
-                <small>{item.department} · {item.updatedAt}</small>
-              </article>
-            ))}
-          </div>
-          <div className="schedule-list">
-            {schedules.map((schedule) => (
-              <article key={schedule.id}>
-                <time>{schedule.date}</time>
-                <div>
-                  <strong>{schedule.title}</strong>
-                  <small>{schedule.target}</small>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-    </>
+    </div>
   )
 }
 

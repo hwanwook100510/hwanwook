@@ -26,15 +26,16 @@ export const members: Member[] = [
 ]
 
 export const progressItems: ProgressItem[] = [
-  { id: 1, type: '공약', title: '프로젝트실 신청 완화', department: '사무행정부', status: '선생님과 논의 중', updatedAt: '2026-05-22' },
-  { id: 2, type: '공약', title: '투명한 학생회(웹사이트 개설, 인스타 활성화, 학생대의원회 생중계)', department: '홍보부', status: '실행 중', updatedAt: '2026-05-22' },
+  { id: 1, type: '공약', title: '프로젝트실 신청 절차 단순화', department: '사무행정부', status: '선생님과 논의 중', updatedAt: '2026-05-22' },
+  { id: 2, type: '공약', title: '투명한 학생회', department: '홍보부', status: '실행 중', updatedAt: '2026-05-22' },
   { id: 3, type: '공약', title: '학생 정책 제안제', department: '학생복지부', status: '구체화 중', updatedAt: '2026-05-22' },
-  { id: 4, type: '공약', title: 'e스포츠 대회', department: '생활스포츠부', status: '학생회 내부 논의 중', updatedAt: '2026-05-22' },
-  { id: 5, type: '공약', title: '학생회 부서 개편', department: '회장단', status: '완료', updatedAt: '2026-05-22' },
-  { id: 6, type: '공약', title: '자판기 설치', department: '학생복지부', status: '선생님과 논의 중', updatedAt: '2026-05-22' },
-  { id: 7, type: '공약', title: '대회 연계 프로그램', department: 'IT부', status: '구체화 중', updatedAt: '2026-05-22' },
-  { id: 8, type: '공약', title: '사복데이', department: '바른생활부', status: '허가', updatedAt: '2026-05-22' },
-  { id: 9, type: '공약', title: '기숙사 방역', department: '환경예술부', status: '실행 중', updatedAt: '2026-05-22' },
+  { id: 4, type: '공약', title: 'e-스포츠 대회 개최', department: '생활스포츠부', status: '학생회 내부 논의 중', updatedAt: '2026-05-22' },
+  { id: 5, type: '공약', title: '자판기 설치', department: '학생복지부', status: '선생님과 논의 중', updatedAt: '2026-05-22' },
+  { id: 6, type: '공약', title: '대회 연계 프로그램', department: 'IT부', status: '구체화 중', updatedAt: '2026-05-22' },
+  { id: 7, type: '공약', title: '사복 귀가 시행', department: '바른생활부', status: '허가', updatedAt: '2026-05-22' },
+  { id: 8, type: '공약', title: '기숙사 방역', department: '환경예술부', status: '실행 중', updatedAt: '2026-05-22' },
+  { id: 9, type: '공약', title: '잔류 자율성 강화', department: '사무행정부', status: '구체화 중', updatedAt: '2026-05-22' },
+  { id: 10, type: '공약', title: '전체 잔류일을 활용한 학예회', department: '문예창작부', status: '학생회 내부 논의 중', updatedAt: '2026-05-22' },
 ]
 
 export const initialSuggestions: PolicySuggestion[] = [

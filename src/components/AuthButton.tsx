@@ -26,7 +26,9 @@ function AuthButton() {
 
     return (
       <div className="auth-profile">
-        {user.photoURL && <img src={user.photoURL} alt="프로필" />}
+        <Link className="auth-avatar-link" to={isAdmin ? '/admin' : '/mypage'} aria-label="내 정보 보기">
+          {user.photoURL ? <img src={user.photoURL} alt="프로필" /> : <span>{user.displayName?.slice(0, 1) ?? '나'}</span>}
+        </Link>
         <div>
           <strong>{user.displayName}</strong>
           <small>{user.email}</small>
