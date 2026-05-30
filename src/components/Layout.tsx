@@ -18,6 +18,8 @@ const navigation = [
   { to: '/progress', label: '공약 진행 현황' },
 ]
 
+const showClubDashboardNav = false
+
 type LayoutProps = {
   children: React.ReactNode
 }
@@ -73,7 +75,7 @@ function Layout({ children }: LayoutProps) {
 
   const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
   const extraNavigation = [
-    ...(hasClubPermission ? [{ to: '/club-dashboard', label: '동아리 관리' }] : []),
+    ...(showClubDashboardNav && hasClubPermission ? [{ to: '/club-dashboard', label: '동아리 관리' }] : []),
     ...(isAdmin ? [{ to: '/admin', label: '관리자' }] : []),
   ]
   const visibleNavigation = [...baseNavigation, ...extraNavigation]
