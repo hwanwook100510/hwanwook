@@ -14,7 +14,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location }} />
+    return <Navigate to="/register" replace state={{ from: location }} />
   }
 
   if (!isAdminEmail(user.email) && profileLoading) {

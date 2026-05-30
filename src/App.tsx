@@ -80,13 +80,13 @@ function App() {
     <Layout>
       <Suspense fallback={<div className="auth-card route-loading"><p>페이지를 불러오고 있습니다.</p></div>}>
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/members" element={<Members />} />
+          <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+          <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
           <Route path="/login" element={<Login />} />
           <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
           <Route path="/club-dashboard" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
-          <Route path="/register" element={<ProtectedRoute><Register /></ProtectedRoute>} />
+          <Route path="/register" element={<Register />} />
           <Route path="/evaluation" element={<ProtectedRoute><Evaluation /></ProtectedRoute>} />
           <Route path="/vote" element={<ProtectedRoute><Vote /></ProtectedRoute>} />
           <Route path="/clubs" element={<ProtectedRoute><ClubSupport /></ProtectedRoute>} />
@@ -94,7 +94,7 @@ function App() {
           <Route path="/clubs/select/:priority" element={<ProtectedRoute><ClubSelect /></ProtectedRoute>} />
           <Route path="/clubs/questions/:clubName" element={<ProtectedRoute><ClubQuestions /></ProtectedRoute>} />
           <Route path="/suggestions" element={<ProtectedRoute><Suggestions /></ProtectedRoute>} />
-          <Route path="/progress" element={<PolicyProgress />} />
+          <Route path="/progress" element={<ProtectedRoute><PolicyProgress /></ProtectedRoute>} />
         </Routes>
       </Suspense>
     </Layout>

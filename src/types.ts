@@ -24,6 +24,15 @@ export type PolicySuggestion = {
   content: string
   effect: string
   createdAt: string
+  authorEmail?: string
+  authorName?: string
+  isAnonymous?: boolean
+}
+
+export type PolicySuggestionAuthor = {
+  suggestionId: number
+  authorEmail: string
+  authorName: string
 }
 
 export type EvaluationResult = {
@@ -44,6 +53,8 @@ export type ClubApplication = {
   secondChoice: string
   thirdChoice: string
   createdAt: string
+  locked?: boolean
+  unlockedByAdmin?: boolean
 }
 
 export type StudentProfile = {
@@ -62,6 +73,18 @@ export type ClubRoleAssignment = {
   club: string
   role: ClubRole
   updatedAt: string
+}
+
+export type AccountSuspension = {
+  email: string
+  suspendedAt: string
+  suspendedBy: string
+}
+
+export type EvaluationResponse = EvaluationResult & {
+  email: string
+  name: string
+  createdAt: string
 }
 
 export type ClubIntro = {

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { collection, doc, getDocs, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import type { ClubRole, ClubRoleAssignment, StudentProfile } from '../types'
+import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, StudentProfile } from '../types'
 import { isAdminEmail } from '../utils/permissions'
 
 function mergeProfiles(remoteProfiles: StudentProfile[], localProfiles: StudentProfile[]) {
@@ -23,6 +23,8 @@ function Admin() {
   const [assignments, setAssignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
   const [visibleProfiles, setVisibleProfiles] = useState<StudentProfile[]>(profiles)
   const [visibleAssignments, setVisibleAssignments] = useState<ClubRoleAssignment[]>(assignments)
+  const [applications, setApplications] = useState<ClubApplication[]>([])
+  const [suspensions, setSuspensions] = useState<AccountSuspension[]>([])
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -32,15 +34,21 @@ function Admin() {
 
     async function loadAdminData() {
       try {
-        const [profileSnapshot, assignmentSnapshot] = await Promise.all([
+        const [profileSnapshot, assignmentSnapshot, applicationSnapshot, suspensionSnapshot] = await Promise.all([
           getDocs(collection(db!, 'studentProfiles')),
           getDocs(collection(db!, 'clubRoleAssignments')),
+          getDocs(collection(db!, 'clubApplications')),
+          getDocs(collection(db!, 'suspendedUsers')),
         ])
         const remoteProfiles = profileSnapshot.docs.map((item) => item.data() as StudentProfile)
         const remoteAssignments = assignmentSnapshot.docs.map((item) => item.data() as ClubRoleAssignment)
+        const remoteApplications = applicationSnapshot.docs.map((item) => item.data() as ClubApplication)
+        const remoteSuspensions = suspensionSnapshot.docs.map((item) => item.data() as AccountSuspension)
 
         setVisibleProfiles(mergeProfiles(remoteProfiles, profiles))
         setVisibleAssignments(remoteAssignments)
+        setApplications(remoteApplications)
+        setSuspensions(remoteSuspensions)
         setAssignments(remoteAssignments)
       } catch {
         setMessage('Firestore 데이터를 불러오지 못했습니다. Firebase Console에서 Firestore Database를 활성화했는지 확인해주세요.')
@@ -86,6 +94,70 @@ function Admin() {
     }
   }
 
+  const updateProfile = async (email: string, field: 'grade' | 'classNumber' | 'number' | 'name', value: string) => {
+    const current = visibleProfiles.find((profile) => profile.email === email)
+
+    if (!current) return
+
+    const nextProfile = { ...current, [field]: value }
+    setVisibleProfiles(visibleProfiles.map((profile) => profile.email === email ? nextProfile : profile))
+
+    if (db) {
+      await setDoc(doc(db, 'studentProfiles', email), nextProfile, { merge: true })
+    }
+  }
+
+  const unlockApplication = async (email: string) => {
+    const current = applications.find((application) => application.email === email)
+
+    if (!current) {
+      setMessage('해제할 지원서가 없습니다.')
+      return
+    }
+
+    const nextApplication = { ...current, locked: false, unlockedByAdmin: true }
+    setApplications(applications.map((application) => application.email === email ? nextApplication : application))
+
+    if (db) {
+      await setDoc(doc(db, 'clubApplications', email), nextApplication, { merge: true })
+    }
+
+    setMessage(`${email} 지원서 수정을 다시 허용했습니다.`)
+  }
+
+  const suspendAccount = async (email: string) => {
+    if (!db) {
+      setMessage('Firestore가 연결되어야 계정을 정지할 수 있습니다.')
+      return
+    }
+
+    if (isAdminEmail(email)) {
+      setMessage('관리자 계정은 정지할 수 없습니다.')
+      return
+    }
+
+    const suspension: AccountSuspension = {
+      email,
+      suspendedAt: new Date().toISOString(),
+      suspendedBy: user?.email ?? 'admin',
+    }
+
+    setSuspensions([suspension, ...suspensions.filter((item) => item.email !== email)])
+    await setDoc(doc(db, 'suspendedUsers', email), suspension, { merge: true })
+    setMessage(`${email} 계정을 정지했습니다.`)
+  }
+
+  const restoreAccount = async (email: string) => {
+    if (!db) {
+      setMessage('Firestore가 연결되어야 계정 정지를 해제할 수 있습니다.')
+      return
+    }
+
+    setSuspensions(suspensions.filter((item) => item.email !== email))
+    await deleteDoc(doc(db, 'suspendedUsers', email))
+    setMessage(`${email} 계정 정지를 해제했습니다.`)
+  }
+
   return (
     <section className="page-section">
       <SectionHeader
@@ -97,6 +169,8 @@ function Admin() {
       <div className="admin-list">
         {visibleProfiles.length === 0 ? <p>아직 회원가입한 학생이 없습니다.</p> : visibleProfiles.map((profile) => {
           const assignment = visibleAssignments.find((item) => item.email === profile.email)
+          const isSuspended = suspensions.some((item) => item.email === profile.email)
+          const application = applications.find((item) => item.email === profile.email)
 
           return (
             <article className="admin-row" key={profile.email}>
@@ -104,6 +178,10 @@ function Admin() {
                 <strong>{profile.name}</strong>
                 <span>{profile.grade}학년 {profile.classNumber}반 {profile.number}번 · {profile.email}</span>
               </div>
+              <label><span>학년</span><select value={profile.grade} onChange={(event) => updateProfile(profile.email, 'grade', event.target.value)}><option value="1">1학년</option><option value="2">2학년</option><option value="3">3학년</option></select></label>
+              <label><span>반</span><input value={profile.classNumber} onChange={(event) => updateProfile(profile.email, 'classNumber', event.target.value)} /></label>
+              <label><span>번호</span><input value={profile.number} onChange={(event) => updateProfile(profile.email, 'number', event.target.value)} /></label>
+              <label><span>이름</span><input value={profile.name} onChange={(event) => updateProfile(profile.email, 'name', event.target.value)} /></label>
               <label>
                 <span>동아리</span>
                 <select value={assignment?.club ?? ''} onChange={(event) => updateAssignment(profile.email, 'club', event.target.value)}>
@@ -118,6 +196,10 @@ function Admin() {
                   <option>동아리장</option>
                 </select>
               </label>
+              {isSuspended
+                ? <button className="secondary-button" type="button" onClick={() => restoreAccount(profile.email)}>정지 해제</button>
+                : <button className="primary-button" type="button" onClick={() => suspendAccount(profile.email)}>계정 정지</button>}
+              {application && <button className="secondary-button" type="button" onClick={() => unlockApplication(profile.email)}>지원서 수정 허용</button>}
             </article>
           )
         })}

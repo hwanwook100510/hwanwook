@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
 import type { StudentProfile } from '../types'
 import { ADMIN_EMAILS, normalizeEmail } from '../utils/permissions'
@@ -13,6 +13,7 @@ const DIMIGO_DOMAIN = '@dimigo.hs.kr'
 const ALLOWED_EMAILS = ADMIN_EMAILS
 const DOMAIN_ERROR = '한국디지털미디어고등학교 계정만 로그인할 수 있습니다.'
 const CONFIG_ERROR = 'Firebase 설정이 아직 완료되지 않았습니다. .env 파일을 먼저 설정해주세요.'
+const SUSPENDED_ERROR = '정지된 계정입니다. 관리자에게 문의해주세요.'
 
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
@@ -44,6 +45,16 @@ async function syncLocalProfileToFirestore(currentUser: User) {
   }
 }
 
+async function isSuspendedEmail(email: string | null) {
+  if (!db || !email || isAllowedEmail(email) === false) {
+    return false
+  }
+
+  const snapshot = await getDoc(doc(db, 'suspendedUsers', email))
+
+  return snapshot.exists()
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(isFirebaseConfigured)
@@ -60,6 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (currentUser && !isAllowedEmail(currentUser.email)) {
         setUser(null)
         setError(DOMAIN_ERROR)
+        await signOut(firebaseAuth)
+        setLoading(false)
+        return
+      }
+
+      if (currentUser && await isSuspendedEmail(currentUser.email)) {
+        setUser(null)
+        setError(SUSPENDED_ERROR)
         await signOut(firebaseAuth)
         setLoading(false)
         return
@@ -104,6 +123,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isAllowedEmail(result.user.email)) {
       setUser(null)
       setError(DOMAIN_ERROR)
+      await signOut(auth)
+      return
+    }
+
+    if (await isSuspendedEmail(result.user.email)) {
+      setUser(null)
+      setError(SUSPENDED_ERROR)
       await signOut(auth)
       return
     }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { doc, setDoc } from 'firebase/firestore'
 import { Link, Navigate, useLocation } from 'react-router-dom'
+import AuthButton from '../components/AuthButton'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
@@ -18,7 +19,7 @@ const emptyForm = {
 }
 
 function Register() {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const location = useLocation()
   const { profile, loading: profileLoading } = useStudentProfile()
   const [profiles, setProfiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
@@ -57,6 +58,27 @@ function Register() {
 
   if (isAdminEmail(user?.email)) {
     return <Navigate to="/admin" replace />
+  }
+
+  if (loading) {
+    return <section className="page-section"><div className="auth-card"><p>로그인 상태를 확인하고 있습니다.</p></div></section>
+  }
+
+  if (!user) {
+    return (
+      <section className="page-section auth-page">
+        <SectionHeader
+          eyebrow="Student Registration"
+          title="회원가입이 필요합니다"
+          description="학생회 웹사이트의 기능을 사용하려면 먼저 학교 Google 계정으로 로그인하고 학생 정보를 등록해야 합니다."
+        />
+        <div className="auth-card">
+          <h3>학교 계정으로 시작하기</h3>
+          <p>@dimigo.hs.kr 계정으로 로그인한 뒤 회원가입 정보를 입력할 수 있습니다.</p>
+          <AuthButton />
+        </div>
+      </section>
+    )
   }
 
   if (profileLoading) {

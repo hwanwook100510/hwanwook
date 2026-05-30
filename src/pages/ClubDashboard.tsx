@@ -28,6 +28,7 @@ function ClubDashboard() {
   const club = clubs.find((item) => item.name === assignment?.club)
   const savedIntro = remoteIntros.find((intro) => intro.club === assignment?.club)
   const [intro, setIntro] = useState(savedIntro?.intro ?? '')
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
     if (!db || !userEmail) {
@@ -115,6 +116,25 @@ function ClubDashboard() {
     }
   }
 
+  const assignClubMember = async (email: string) => {
+    if (!club || assignment?.role !== '동아리장') return
+
+    const nextAssignment: ClubRoleAssignment = {
+      email,
+      club: club.name,
+      role: '동아리원',
+      updatedAt: new Date().toISOString().slice(0, 10),
+    }
+
+    setRemoteAssignments([nextAssignment, ...remoteAssignments.filter((item) => item.email !== email)])
+
+    if (db) {
+      await setDoc(doc(db, 'clubRoleAssignments', email), nextAssignment, { merge: true })
+    }
+
+    setMessage(`${email} 학생에게 ${club.name} 동아리원 권한을 부여했습니다.`)
+  }
+
   return (
     <section className="page-section">
       <SectionHeader
@@ -151,6 +171,7 @@ function ClubDashboard() {
       </div>
       <section className="content-section">
         <SectionHeader title="우리 동아리 지원서" description="1순위, 2순위, 3순위 중 우리 동아리를 선택한 지원자 명단입니다." />
+        {message && <p className="success-message">{message}</p>}
         <div className="admin-list">
           {clubApplications.length === 0 ? <p>아직 이 동아리에 들어온 지원서가 없습니다.</p> : clubApplications.map((application) => (
             <article className="admin-row" key={application.id}>
@@ -163,6 +184,7 @@ function ClubDashboard() {
                 <li>2순위: {application.secondChoice}</li>
                 <li>3순위: {application.thirdChoice}</li>
               </ol>
+              {assignment.role === '동아리장' && <button className="secondary-button" type="button" onClick={() => assignClubMember(application.email)}>동아리원 권한 부여</button>}
             </article>
           ))}
         </div>
