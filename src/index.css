@@ -39,7 +39,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: auto; }
 body {
   margin: 0;
   min-width: 320px;
@@ -185,7 +185,7 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
 .status-board strong { display: block; margin: 6px 0 4px; color: var(--navy); font-size: 2.2rem; line-height: 1; letter-spacing: -0.04em; }
 .status-board p { margin: 0; font-size: 0.9rem; }
 
-.form-grid{padding:20px 0;}
+.form-grid{padding:20px 0 0 0;}
 .form-grid b{font-weight: bolder;}
 .content-section, .page-section { padding: 34px 0; }
 .page-section { min-height: 70vh; }
@@ -375,8 +375,11 @@ body:has(.home-page) { background: #fff; }
 
 .home-section { margin-top: 44px; }
 .home-section-head { margin-bottom: 16px; }
-.policy-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+.policy-carousel { overflow: hidden; width: 100%; }
+.policy-grid { display: flex; flex-wrap: nowrap; gap: 24px; width: 100%; transform: translateX(0); transition: none; }
+.policy-grid.sliding { transform: translateX(calc(var(--policy-step) * -1)); transition: transform .5s ease; }
 .policy-card { position: relative; min-height: 260px; display: grid; justify-items: center; align-content: start; padding: 18px 16px 16px; border: 1px solid #eee3e8; border-radius: 12px; text-align: center; background: white; box-shadow: 0 10px 24px rgba(70, 38, 55, 0.06); }
+.policy-carousel .policy-card { flex: 0 0 calc((100% - 72px) / 4); }
 .policy-card:hover, .quick-grid a:hover, .home-card:hover { transform: translateY(-2px); box-shadow: 0 18px 36px rgba(70, 38, 55, 0.1); }
 .policy-status { position: absolute; left: 16px; top: 16px; margin: 0; }
 .policy-status-완료 { background: #b8bbc1; }
@@ -405,10 +408,11 @@ body:has(.home-page) { background: #fff; }
 .featured-schedule-card .home-card-head h2 { display: inline-flex; align-items: center; gap: 24px; margin: 0; color: var(--blue); font-size: clamp(2rem, 3.4vw, 3.35rem); font-weight: 950; }
 .featured-schedule-card .home-card-head .home-icon { width: clamp(2.2rem, 3vw, 3.2rem); height: clamp(2.2rem, 3vw, 3.2rem); }
 .featured-schedule-card ul { margin: 0; }
-.featured-schedule-card li { grid-template-columns: clamp(9.5rem, 14vw, 13.5rem) minmax(0, 1fr); gap: clamp(2.1rem, 4.2vw, 3.8rem); padding: 0; border-bottom: 0; }
-.schedule-card-home.featured-schedule-card time { width: clamp(8.5rem, 14vw, 13.5rem); height: clamp(8.5rem, 14vw, 13.5rem); border-radius: 28px; color: #fff; background: linear-gradient(135deg, #dc3e86, #d91c76); box-shadow: 0 22px 42px rgba(217, 28, 118, .28); }
-.schedule-card-home.featured-schedule-card time strong { color: #fff; font-size: clamp(4rem, 8vw, 6.6rem); text-shadow: 0 2px 10px rgba(80, 0, 35, .16); }
-.schedule-card-home.featured-schedule-card time span { position: relative; width: 70%; border-top: 1px solid rgba(255,255,255,.18); padding-top: 16px; color: #fff; font-size: clamp(1.35rem, 2.3vw, 2rem); text-shadow: 0 1px 6px rgba(80, 0, 35, .18); }
+.featured-schedule-card li { grid-template-columns: clamp(8.6rem, 13.6vw, 13rem) minmax(0, 1fr); gap: clamp(2.1rem, 4.2vw, 3.8rem); padding: 0; border-bottom: 0; }
+.schedule-card-home.featured-schedule-card time { display: flex; flex-direction: column; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; width: clamp(8.6rem, 13.6vw, 13rem); height: clamp(8.6rem, 13.6vw, 13rem); margin-left: clamp(.4rem, 1vw, .9rem); border-radius: 26px; padding: clamp(1rem, 1.7vw, 1.55rem) clamp(.8rem, 1.3vw, 1.25rem); color: #fff; text-align: center; background: linear-gradient(135deg, #9b2c6b, #8f2d68); box-shadow: 0 18px 34px rgba(80, 0, 35, .22); }
+.schedule-card-home.featured-schedule-card time em { margin-bottom: clamp(.55rem, 1.1vw, .9rem); color: #fff; font-size: clamp(.95rem, 1.45vw, 1.35rem); font-style: normal; font-weight: 900; line-height: 1; text-align: center; text-shadow: 0 1px 6px rgba(80, 0, 35, .2); }
+.schedule-card-home.featured-schedule-card time strong { display: grid; place-items: center; margin-bottom: clamp(.5rem, 1vw, .8rem); color: #F7CDDB; font-size: clamp(3.35rem, 5.9vw, 5.3rem); line-height: .9; text-align: center; letter-spacing: -.08em; text-shadow: 0 2px 10px rgba(80, 0, 35, .2); }
+.schedule-card-home.featured-schedule-card time span { width: 76%; border-bottom: 1px solid rgba(255,255,255,.28); padding-bottom: clamp(.6rem, 1.1vw, .95rem); color: #fff; font-size: clamp(1.05rem, 1.8vw, 1.6rem); font-weight: 950; line-height: 1; text-align: center; text-shadow: 0 1px 6px rgba(80, 0, 35, .2); }
 .featured-schedule-card li > div { display: grid; align-content: center; justify-items: start; }
 .featured-schedule-card b { display: inline-flex; width: fit-content; margin-bottom: 24px; border-radius: 999px; padding: 10px 28px; color: #fff; background: linear-gradient(135deg, #e6468d, var(--blue)); font-size: clamp(1rem, 1.6vw, 1.4rem); box-shadow: 0 10px 22px rgba(217, 28, 118, .18); }
 .featured-schedule-card li strong { color: #17171c; font-size: clamp(2.25rem, 4.4vw, 4.3rem); letter-spacing: -0.06em; line-height: 1.05; }
@@ -440,6 +444,7 @@ body:has(.home-page) { background: #fff; }
 .home-card:hover, .policy-card:hover, .quick-grid a:hover, .summary-card:hover, .link-card:hover, .club-photo-card:hover, .suggestion-card:hover { box-shadow: var(--shadow-lift); }
 .eyebrow, .section-header span, .link-card .link-meta, .notice-item span, .suggestion-card span, .type-pill, .compact-list span, .club-tags span, .student-summary span, .choice-selector span, .member-card span { color: var(--blue); background: var(--accent-soft); border-color: var(--accent-line); }
 .policy-icon, .round-icon, .progress-summary-card li > span, .schedule-card-home time, .stat-grid article > svg, .step-card span, .value-card span, .history-line span { color: var(--blue); background: var(--accent-soft); }
+.schedule-card-home.featured-schedule-card time { color: #fff; background: linear-gradient(135deg, #dc3e86, #d91c76); }
 .policy-status, .vote-card p span, .status-chip, .recent-table span, .popular-card b, .club-apply-card b, .officer-card b, .guide-card p span, .candidate > b, .priority-row b { color: #fff; background: var(--blue); }
 .policy-status-완료, .policy-status-검토중 { color: var(--muted); background: var(--surface-strong); }
 .progress-track, .score-list i, .distribution i, .vote-result i, .policy-eval b i { background: #e9edf3; }
@@ -565,7 +570,7 @@ main:has(.design-page) { width: 100%; }
 .eval-form input[type='range']::-moz-range-track { height: 6px; border-radius: 999px; background: #e5e7eb; }
 .eval-form input[type='range']::-moz-range-progress { height: 6px; border-radius: 999px; background: #9b58c7; }
 .eval-form input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 999px; background: #9b58c7; box-shadow: 0 4px 12px rgba(88, 38, 130, .22); }
-.suggestion-form .design-primary { margin-top: 14px; }
+.suggestion-form .design-primary, .suggestion-form .success-message { margin-top: 14px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .form-grid label:first-child, .form-grid > div:nth-child(3), .form-grid label:nth-child(4), .form-grid label:nth-child(5) { grid-column: 1 / -1; }
 .suggestion-form h2 { color: #f72e7d; }
@@ -673,7 +678,7 @@ main:has(.design-page) { width: 100%; }
   .topbar-actions { grid-column: 3; grid-row: 1; width: auto; justify-content: flex-end; }
   .home-top-grid, .home-lower-grid { grid-template-columns: 1fr 1fr; }
   .vote-card { grid-column: 1 / -1; }
-  .policy-grid { grid-template-columns: repeat(2, 1fr); }
+  .policy-carousel .policy-card { flex-basis: calc((100% - 24px) / 2); }
   .quick-grid { grid-template-columns: repeat(3, 1fr); }
   .design-wide, .design-hero > div { width: min(100% - 40px, 1100px); }
   .stat-grid.four, .value-grid, .officer-grid, .activity-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -711,6 +716,7 @@ main:has(.design-page) { width: 100%; }
   .home-hero { min-height: auto; padding: 70px 0; background-size: auto, 440px, cover; background-position: center, right -90px center, center; }
   .home-hero-copy, .home-top-grid, .home-section, .home-lower-grid, .quick-section { width: min(100% - 28px, var(--container)); }
   .home-top-grid, .home-lower-grid, .policy-grid { grid-template-columns: 1fr; }
+  .policy-carousel .policy-card { flex-basis: 100%; }
   .home-top-grid > article { min-height: auto; }
   .home-promise-card { min-height: 280px; }
   .quick-grid { grid-template-columns: repeat(2, 1fr); }

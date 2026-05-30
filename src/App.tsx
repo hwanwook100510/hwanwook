@@ -1,5 +1,5 @@
-import { lazy, Suspense, useEffect } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
+import { Route, Routes, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -19,7 +19,37 @@ const Register = lazy(() => import('./pages/Register'))
 const Suggestions = lazy(() => import('./pages/Suggestions'))
 const Vote = lazy(() => import('./pages/Vote'))
 
+function scrollToTop() {
+  window.scrollTo(0, 0)
+}
+
 function App() {
+  const { pathname } = useLocation()
+
+  useLayoutEffect(() => {
+    scrollToTop()
+  }, [pathname])
+
+  useEffect(() => {
+    const scrollBeforeNavigation = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return
+
+      const target = event.target instanceof Element ? event.target.closest('a') : null
+      if (!(target instanceof HTMLAnchorElement) || target.target || target.hasAttribute('download')) return
+
+      const url = new URL(target.href, window.location.href)
+      if (url.origin !== window.location.origin || url.pathname === window.location.pathname) return
+
+      scrollToTop()
+    }
+
+    document.addEventListener('click', scrollBeforeNavigation, true)
+
+    return () => {
+      document.removeEventListener('click', scrollBeforeNavigation, true)
+    }
+  }, [])
+
   useEffect(() => {
     const blockShortcuts = (event: KeyboardEvent) => {
       const key = event.key.toLowerCase()
