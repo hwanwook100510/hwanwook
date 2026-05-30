@@ -13,7 +13,6 @@ const DIMIGO_DOMAIN = '@dimigo.hs.kr'
 const ALLOWED_EMAILS = ADMIN_EMAILS
 const DOMAIN_ERROR = '한국디지털미디어고등학교 계정만 로그인할 수 있습니다.'
 const CONFIG_ERROR = 'Firebase 설정이 아직 완료되지 않았습니다. .env 파일을 먼저 설정해주세요.'
-const SUSPENDED_ERROR = '정지된 계정입니다. 관리자에게 문의해주세요.'
 
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
@@ -78,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUser && await isSuspendedEmail(currentUser.email)) {
         setUser(null)
-        setError(SUSPENDED_ERROR)
+        setError('')
         await signOut(firebaseAuth)
         setLoading(false)
         return
@@ -129,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (await isSuspendedEmail(result.user.email)) {
       setUser(null)
-      setError(SUSPENDED_ERROR)
+      setError('')
       await signOut(auth)
       return
     }
