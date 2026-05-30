@@ -24,3 +24,7 @@ googleProvider?.setCustomParameters({
 })
 console.log(firebaseConfig)
 console.log(isFirebaseConfigured)
+console.log('firebaseConfig:', firebaseConfig)
+console.log('isFirebaseConfigured:', isFirebaseConfigured)
+console.log('db:', db)
+console.log('auth:', auth)

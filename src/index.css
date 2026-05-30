@@ -186,6 +186,7 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
 .status-board p { margin: 0; font-size: 0.9rem; }
 
 .form-grid{padding:20px 0;}
+.form-grid b{font-weight: bolder;}
 .content-section, .page-section { padding: 34px 0; }
 .page-section { min-height: 70vh; }
 .section-header { max-width: 780px; margin-bottom: 22px; }

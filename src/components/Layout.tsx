@@ -35,17 +35,41 @@ function Layout({ children }: LayoutProps) {
   const hasClubPermission = hasLocalClubPermission || hasRemoteClubPermission
 
   useEffect(() => {
-    if (!db || !userEmail) {
-      return
-    }
+  if (!db || typeof userEmail !== 'string') {
+    console.log('db 또는 userEmail 없음')
+    console.log('db:', db)
+    console.log('userEmail:', userEmail)
+    setRemoteClubPermission(null)
+    return
+  }
 
-    async function loadPermission() {
-      const snapshot = await getDoc(doc(db!, 'clubRoleAssignments', userEmail!))
-      setRemoteClubPermission({ email: userEmail!, hasPermission: snapshot.exists() })
-    }
+  async function loadPermission() {
+    if (!db || typeof userEmail !== 'string') return
 
-    void loadPermission()
-  }, [userEmail])
+    try {
+      console.log('===== Firestore 읽기 시작 =====')
+      console.log('userEmail:', userEmail)
+
+      const docRef = doc(db, 'clubRoleAssignments', userEmail)
+      const snapshot = await getDoc(docRef)
+
+      console.log('===== Firestore 읽기 성공 =====')
+      console.log('exists:', snapshot.exists())
+      console.log('data:', snapshot.data())
+
+      setRemoteClubPermission({
+        email: userEmail,
+        hasPermission: snapshot.exists(),
+      })
+    } catch (error) {
+      console.error('===== Firestore 읽기 실패 =====')
+      console.error(error)
+      setRemoteClubPermission(null)
+    }
+  }
+
+  void loadPermission()
+}, [userEmail])
 
   const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
   const extraNavigation = [
