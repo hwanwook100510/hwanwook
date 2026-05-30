@@ -9,8 +9,8 @@ const values = [
   { icon: 'check', title: '학생회가 하는 일', text: '의견 수렴, 정책 제안, 행사 기획, 학생 복지와 권익 증진' },
 ]
 const officers = [
-  { role: '회장', name: '박동우' },
-  { role: '부회장', name: '정환욱' },
+  { role: '회장', name: '박동우', image: '/president.jpg' },
+  { role: '부회장', name: '정환욱', image: '/vice-president.jpg' },
 ]
 
 function Icon({ name }: { name: string }) {
@@ -43,12 +43,12 @@ function Members() {
           </div>
         </div>
         <div>
-          <div className="design-title"><h2>2025학년도 회장단</h2><Link to="/members">전체 보기</Link></div>
+          <div className="design-title"><h2>2026-27학년도 회장단 후보</h2><Link to="/members">전체 보기</Link></div>
           <div className="officer-grid">
             {officers.map((officer) => (
               <article className="design-card officer-card" key={officer.role}>
                 <b>{officer.role}</b>
-                <div className="empty-photo">{officer.name.slice(0, 1)}</div>
+                <img className="officer-photo" src={officer.image} alt={`${officer.name} ${officer.role}`} />
                 <strong>{officer.name}</strong>
                 <p>사진과 소개는 추후 등록됩니다.</p>
               </article>

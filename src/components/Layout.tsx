@@ -13,7 +13,6 @@ const navigation = [
   { to: '/', label: '홈' },
   { to: '/members', label: '학생회 소개' },
   { to: '/evaluation', label: '학생회 평가' },
-  { to: '/clubs', label: '동아리 지원' },
   { to: '/suggestions', label: '정책 제안' },
   { to: '/vote', label: '투표' },
   { to: '/progress', label: '공약 진행 현황' },

@@ -42,6 +42,9 @@
   <symbol id="check" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 6 9 17l-5-5"/>
   </symbol>
+  <symbol id="calendar" viewBox="0 0 24 24">
+    <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 3v4m10-4v4M4 9h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Zm2 8h.01M12 13h.01M16 13h.01M8 17h.01M12 17h.01"/>
+  </symbol>
   <symbol id="megaphone" viewBox="0 0 24 24">
     <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 13h3l10 5V6L7 11H4zm3 0 2 6h3l-2-5"/>
   </symbol>

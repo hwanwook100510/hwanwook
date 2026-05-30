@@ -2,6 +2,10 @@ import { Link } from 'react-router-dom'
 
 const policyPlaceholders = Array.from({ length: 4 }, (_, index) => index)
 
+function Icon({ name }: { name: string }) {
+  return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg>
+}
+
 function Home() {
   return (
     <div className="home-page">
@@ -35,15 +39,15 @@ function Home() {
       <section className="home-lower-grid">
         <article className="home-card schedule-card-home featured-schedule-card">
           <div className="home-card-head">
-            <h2>다가오는 일정</h2>
+            <h2><Icon name="calendar" />다가오는 일정</h2>
           </div>
           <ul>
             <li>
               <time><strong>15</strong><span>6월</span></time>
               <div>
                 <b>중요 일정</b>
-                <strong>학생회 투표일</strong>
-                <small>6월 15일 월요일 7교시</small>
+                <strong>학생회장선거</strong>
+                <small><Icon name="calendar" />6월 15일 월요일 7교시</small>
               </div>
             </li>
           </ul>

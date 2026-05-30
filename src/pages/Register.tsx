@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
 import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
-import type { ClubApplication, StudentProfile } from '../types'
+import type { StudentProfile } from '../types'
 import { isAdminEmail } from '../utils/permissions'
 
 const emptyForm = {
@@ -22,8 +22,6 @@ function Register() {
   const location = useLocation()
   const { profile, loading: profileLoading } = useStudentProfile()
   const [profiles, setProfiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
-  const [applications] = useLocalStorage<ClubApplication[]>('dimigo-club-applications', [])
-  const savedApplication = applications.find((application) => application.email === user?.email)
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const state = location.state as { from?: { pathname?: string } } | null
@@ -99,23 +97,6 @@ function Register() {
         <div className="panel-card">
           <h3>내 정보</h3>
           <p>회원가입 정보는 최초 등록 후 마이페이지에서 수정할 수 있습니다.</p>
-          <h3>동아리 지원 상태</h3>
-          {savedApplication ? (
-            <article className="mini-card">
-              <strong>지원 완료</strong>
-              <ol className="choice-list">
-                <li>1순위: {savedApplication.firstChoice}</li>
-                <li>2순위: {savedApplication.secondChoice}</li>
-                <li>3순위: {savedApplication.thirdChoice}</li>
-              </ol>
-            </article>
-          ) : (
-            <div className="mini-card">
-              <strong>아직 동아리에 지원하지 않았습니다.</strong>
-              <p>지원하러 가기를 누르면 동아리 지원 페이지로 이동합니다.</p>
-              <Link className="primary-button" to="/clubs">지원하러 가기</Link>
-            </div>
-          )}
         </div>
       </div>
     </section>
