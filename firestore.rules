@@ -280,20 +280,17 @@ service cloud.firestore {
     }
 
     function validPledge(data, pledgeId) {
-      return data.keys().hasOnly(['id', 'title', 'description', 'status', 'progress', 'updatedAt'])
+      return data.keys().hasOnly(['id', 'title', 'description', 'status', 'updatedAt'])
         && data.id is string
         && data.id == pledgeId
         && data.title is string
         && data.description is string
-        && data.status in ['예정', '진행중', '완료', '보류']
-        && data.progress is number
+        && data.status == '선거 중'
         && data.updatedAt is timestamp
         && data.title.size() > 0
         && data.title.size() <= 100
         && data.description.size() > 0
-        && data.description.size() <= 1000
-        && data.progress >= 0
-        && data.progress <= 100;
+        && data.description.size() <= 1000;
     }
 
     function validSuspension(data, targetEmail) {

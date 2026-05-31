@@ -6,8 +6,7 @@ import { clubs } from '../data/clubs'
 import { db } from '../firebase'
 import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, ElectionResult, EvaluationResponse, FirestoreTime, PledgeProgress, PledgeStatus, PolicySuggestion, PolicySuggestionAuthor, StudentProfile, VoteRecord } from '../types'
 
-const pledgeStatuses: PledgeStatus[] = ['예정', '진행중', '완료', '보류']
-const emptyPledgeForm = { id: '', title: '', description: '', status: '예정' as PledgeStatus, progress: '0' }
+const emptyPledgeForm = { id: '', title: '', description: '', status: '선거 중' as PledgeStatus }
 const evaluationLabels = [
   { key: 'promise', label: '공약' },
   { key: 'communication', label: '소통' },
@@ -221,10 +220,9 @@ function Admin() {
 
     const title = pledgeForm.title.trim()
     const description = pledgeForm.description.trim()
-    const progress = Number(pledgeForm.progress)
 
-    if (!title || !description || Number.isNaN(progress) || progress < 0 || progress > 100) {
-      setMessage('공약 제목, 설명, 0~100 사이 진행률을 입력해주세요.')
+    if (!title || !description) {
+      setMessage('공약 제목과 설명을 입력해주세요.')
       return
     }
 
@@ -233,8 +231,7 @@ function Admin() {
       id: pledgeRef.id,
       title,
       description,
-      status: pledgeForm.status,
-      progress,
+      status: '선거 중',
       updatedAt: serverTimestamp() as unknown as PledgeProgress['updatedAt'],
     }
 
@@ -301,7 +298,7 @@ function Admin() {
   }
 
   const editPledge = (pledge: PledgeProgress) => {
-    setPledgeForm({ id: pledge.id, title: pledge.title, description: pledge.description, status: pledge.status, progress: String(pledge.progress) })
+    setPledgeForm({ id: pledge.id, title: pledge.title, description: pledge.description, status: '선거 중' })
   }
 
   const removePledge = async (id: string) => {
@@ -430,8 +427,7 @@ function Admin() {
             <h3>{pledgeForm.id ? '공약 수정' : '공약 추가'}</h3>
             <label><span>제목</span><input value={pledgeForm.title} onChange={(event) => setPledgeForm({ ...pledgeForm, title: event.target.value })} /></label>
             <label><span>설명</span><textarea rows={4} value={pledgeForm.description} onChange={(event) => setPledgeForm({ ...pledgeForm, description: event.target.value })} /></label>
-            <label><span>상태</span><select value={pledgeForm.status} onChange={(event) => setPledgeForm({ ...pledgeForm, status: event.target.value as PledgeStatus })}>{pledgeStatuses.map((status) => <option key={status}>{status}</option>)}</select></label>
-            <label><span>진행률</span><input inputMode="numeric" value={pledgeForm.progress} onChange={(event) => setPledgeForm({ ...pledgeForm, progress: event.target.value })} /></label>
+            <p className="success-message">상태는 모두 선거 중으로 표시됩니다.</p>
             <button className="primary-button" type="button" onClick={savePledge}>저장</button>
             {pledgeForm.id && <button className="secondary-button" type="button" onClick={() => setPledgeForm(emptyPledgeForm)}>취소</button>}
           </div>
@@ -440,7 +436,7 @@ function Admin() {
               <article className="admin-row" key={pledge.id}>
                 <div>
                   <strong>{pledge.title}</strong>
-                  <span>{pledge.status} · {pledge.progress}% · {formatTime(pledge.updatedAt)}</span>
+                  <span>선거 중 · {formatTime(pledge.updatedAt)}</span>
                   <p>{pledge.description}</p>
                 </div>
                 <button className="secondary-button" type="button" onClick={() => editPledge(pledge)}>수정</button>
