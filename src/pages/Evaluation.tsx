@@ -14,6 +14,29 @@ function Stars({ score }: { score: number }) {
   return <span className="stars">{'★★★★★'.split('').map((star, index) => <i key={index} style={{ '--fill': `${Math.max(0, Math.min(1, score - index)) * 100}%` } as React.CSSProperties}>{star}</i>)}</span>
 }
 
+function ScoreBar({ label, value, onChange }: { label: string, value: number, onChange: (value: number) => void }) {
+  return (
+    <fieldset className="score-segment-field">
+      <legend>{label}</legend>
+      <div className="score-segment-bar" role="radiogroup" aria-label={`${label} 점수`}>
+        {scoreOptions.map((score) => (
+          <button
+            aria-checked={value === score}
+            className={value >= score ? 'active' : ''}
+            key={score}
+            role="radio"
+            type="button"
+            onClick={() => onChange(score)}
+          >
+            {score}
+          </button>
+        ))}
+      </div>
+      <small>{value}점 선택</small>
+    </fieldset>
+  )
+}
+
 function Evaluation() {
   const { user, isAdmin, loginWithGoogle } = useAuth()
   const { profile } = useStudentProfile()
@@ -92,7 +115,7 @@ function Evaluation() {
         <h2>종합 만족도</h2><div className="satisfaction-layout"><div className="score-circle"><strong style={{ '--score': `${safeAverage * 20}%` } as React.CSSProperties}><span>{safeAverage.toFixed(2)}</span></strong><Stars score={safeAverage} /></div><div className="score-list">{scoreItems.map((item) => <div key={item.key}><span>{item.label}</span><i><b style={{ width: `${item.score * 20}%` }} /></i><strong>{item.score.toFixed(2)} / 5.00</strong></div>)}</div><div className="distribution"><h3>평가 기준</h3>{scoreOptions.map((value) => <p key={value}><span>{value}점</span><i><b style={{ width: `${value * 20}%` }} /></i><strong>{value}</strong></p>)}</div></div>
       </section>
       <section className="design-wide policy-eval"><div className="design-title"><h2>정책별 평가</h2><Link to="/progress">전체 보기</Link></div><div className="design-card table-card">{scoreItems.map((item) => <article className="admin-row" key={item.key}><strong>{item.label}</strong><span>{item.score.toFixed(2)} / 5.00</span></article>)}</div></section>
-      <section className="design-wide eval-bottom"><div className="design-card"><div className="design-title"><h2>평가 안내</h2><Link to="/suggestions">정책 제안하기</Link></div><p>제출된 평가는 관리자만 원본을 확인하고, 공개 페이지에는 집계된 평균만 표시됩니다.</p></div><article id="evaluation-form" className="design-card eval-form"><h2>평가 참여</h2>{message && <p className="success-message">{message}</p>}{!user ? <><p>로그인 후 평가를 제출할 수 있습니다.</p><button className="design-primary" type="button" onClick={loginWithGoogle}>Google로 로그인</button></> : isAdmin ? <p>관리자는 평가를 제출할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.</p> : hasSubmitted ? <p>이미 평가를 제출했습니다.</p> : <><div className="score-list">{(Object.keys(labels) as Array<keyof EvaluationResult>).map((key) => <fieldset key={key}><legend>{labels[key]}</legend><div className="chip-row">{scoreOptions.map((value) => <label className="select-pill" key={value}><input type="radio" name={key} value={value} checked={scores[key] === value} onChange={() => setScores({ ...scores, [key]: value })} /> {value}점</label>)}</div></fieldset>)}</div><button className="design-primary" type="button" onClick={submitEvaluation}>평가 제출</button></>}</article></section>
+      <section className="design-wide eval-bottom"><div className="design-card"><div className="design-title"><h2>평가 안내</h2><Link to="/suggestions">정책 제안하기</Link></div><p>제출된 평가는 관리자만 원본을 확인하고, 공개 페이지에는 집계된 평균만 표시됩니다.</p></div><article id="evaluation-form" className="design-card eval-form"><h2>평가 참여</h2>{message && <p className="success-message">{message}</p>}{!user ? <><p>로그인 후 평가를 제출할 수 있습니다.</p><button className="design-primary" type="button" onClick={loginWithGoogle}>Google로 로그인</button></> : isAdmin ? <p>관리자는 평가를 제출할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.</p> : hasSubmitted ? <p>이미 평가를 제출했습니다.</p> : <><div className="score-segment-list">{(Object.keys(labels) as Array<keyof EvaluationResult>).map((key) => <ScoreBar key={key} label={labels[key]} value={scores[key]} onChange={(value) => setScores({ ...scores, [key]: value })} />)}</div><button className="design-primary" type="button" onClick={submitEvaluation}>평가 제출</button></>}</article></section>
     </div>
   )
 }

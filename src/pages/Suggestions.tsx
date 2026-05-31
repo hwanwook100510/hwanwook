@@ -94,7 +94,6 @@ function Suggestions() {
     <div className="design-page suggestion-design">
       <section className="design-hero compact"><div><h1>정책 <span>제안</span></h1><p>학교 생활을 더 좋게 만들 수 있는 아이디어를 자유롭게 제안해주세요.</p><p>여러분의 제안이 더 나은 학교를 만드는 첫걸음이 됩니다.</p><a className="home-outline-button" href="#suggestion-guide">제안 가이드 보기</a></div></section>
       {dbError && <section className="design-wide"><p className="success-message">{dbError}</p></section>}
-      <section className="design-wide stat-grid four"><article><Icon name="clipboard" /><b>총 제안 수</b><strong>{visibleSuggestions.length}건</strong><span>전체 누적 제안</span></article><article><Icon name="folder" /><b>작성 권한</b><strong>학생</strong><span>관리자는 조회만 가능</span></article><article><Icon name="check" /><b>중복 제안</b><strong>가능</strong><span>여러 번 제출 가능</span></article><article><Icon name="users" /><b>개인정보</b><strong>비공개</strong><span>관리자만 작성자 확인</span></article></section>
       <section className="design-wide suggestion-layout">
         <div>
           <article id="suggestion-form" className="design-card suggestion-form">

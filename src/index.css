@@ -576,6 +576,14 @@ main:has(.design-page) { width: 100%; }
 .eval-form input[type='range']::-moz-range-track { height: 6px; border-radius: 999px; background: #e5e7eb; }
 .eval-form input[type='range']::-moz-range-progress { height: 6px; border-radius: 999px; background: #9b58c7; }
 .eval-form input[type='range']::-moz-range-thumb { width: 16px; height: 16px; border: 0; border-radius: 999px; background: #9b58c7; box-shadow: 0 4px 12px rgba(88, 38, 130, .22); }
+.score-segment-list { display: grid; gap: 18px; }
+.score-segment-field { display: grid; gap: 10px; min-width: 0; margin: 0; border: 0; padding: 0; }
+.score-segment-field legend { margin-bottom: 8px; color: #33343a; font-weight: 900; }
+.score-segment-field small { color: var(--muted); font-weight: 850; }
+.score-segment-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; min-width: 0; overflow: hidden; border: 1px solid #ffd0e3; border-radius: 999px; padding: 4px; background: #fff; }
+.score-segment-bar button { min-height: 42px; border: 0; border-radius: 999px; color: #8a6074; background: #f5f6f8; font-weight: 950; transition: background .16s ease, color .16s ease, transform .16s ease; }
+.score-segment-bar button.active { color: #fff; background: linear-gradient(135deg, #f72e7d, #ff78b4); }
+.score-segment-bar button:hover { transform: translateY(-1px); }
 .suggestion-form .design-primary, .suggestion-form .success-message { margin-top: 14px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .form-grid label:first-child, .form-grid > div:nth-child(3), .form-grid label:nth-child(4), .form-grid label:nth-child(5) { grid-column: 1 / -1; }
