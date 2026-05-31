@@ -23,14 +23,15 @@ function AuthButton() {
   if (user) {
     return (
       <div className="auth-profile">
-        <Link className="auth-avatar-link" to={isAdmin ? '/admin' : '/mypage'} aria-label="내 정보 보기">
+        <Link className="auth-avatar-link" to="/mypage" aria-label="내 정보 보기">
           {user.photoURL ? <img src={user.photoURL} alt="프로필" /> : <span>{user.displayName?.slice(0, 1) ?? '나'}</span>}
         </Link>
         <div>
           <strong>{user.displayName}</strong>
           <small>{user.email}</small>
         </div>
-        {!isAdmin && <Link className="profile-link" to="/mypage">마이페이지</Link>}
+        <Link className="profile-link" to="/mypage">마이페이지</Link>
+        {isAdmin && <Link className="profile-link" to="/admin">관리자</Link>}
         <button type="button" onClick={logout}>로그아웃</button>
       </div>
     )
