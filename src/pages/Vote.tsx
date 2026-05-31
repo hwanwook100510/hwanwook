@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom'
-import { useAuth } from '../contexts/useAuth'
 import { useClientState } from '../hooks/useClientState'
 
 const candidates = [
@@ -16,31 +15,9 @@ const totalParticipants = 0
 function Icon({ name }: { name: string }) { return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg> }
 
 function Vote() {
-  const { user } = useAuth()
   const [votes, setVotes] = useClientState<Record<string, string>>({})
   const [candidate, setCandidate] = useClientState('')
   const [viewingCandidate, setViewingCandidate] = useClientState('')
-  const [message, setMessage] = useClientState('')
-
-  const savePolicyVote = (title: string, value: '찬성' | '반대') => {
-    if (!user) {
-      setMessage('이 기능은 로그인 후 사용할 수 있습니다.')
-      return
-    }
-
-    setVotes({ ...votes, [title]: value })
-    setMessage('투표가 반영되었습니다.')
-  }
-
-  const saveCandidateVote = () => {
-    if (!user) {
-      setMessage('이 기능은 로그인 후 사용할 수 있습니다.')
-      return
-    }
-
-    setCandidate(viewingCandidate || candidates[0].name)
-    setMessage('투표가 반영되었습니다.')
-  }
 
   return (
     <div className="design-page vote-page">
@@ -48,9 +25,9 @@ function Vote() {
       <section className="design-wide stat-grid four"><article><Icon name="vote" /><b>진행 중 투표</b><strong>3건</strong><span>정책 2건 · 선거 1건</span></article><article><Icon name="check" /><b>정책 찬반 투표</b><strong>2건</strong><span>참여 가능한 정책 투표</span></article><article><Icon name="users" /><b>보궐선거 후보</b><strong>1명</strong><span>바른생활부 차장 보궐선거</span></article><article><Icon name="users" /><b>총 참여 학생</b><strong>{totalParticipants.toLocaleString()}명</strong><span>전체 재학생 {totalStudents.toLocaleString()}명</span></article></section>
       <section className="design-wide vote-layout">
         <div>
-          <article className="design-card vote-list-card" id="policy-vote"><div className="design-title"><h2>정책 찬반 투표</h2><Link to="/suggestions">전체 보기</Link></div>{message && <p className="success-message">{message}</p>}{policyVotes.map((item) => <div className="vote-item" key={item.title}><span className="round-icon"><Icon name="vote" /></span><div><h3>{item.title}</h3><p>{item.desc}</p></div><div className="vote-period"><b>투표 기간</b><span>추후 안내</span><small>참여자 0명</small></div><div className="vote-result"><p>찬성 <i><b style={{ width: `${item.yes}%` }} /></i> {item.yes}%</p><p>반대 <i><b style={{ width: `${item.no}%` }} /></i> {item.no}%</p></div><div><button type="button" onClick={() => savePolicyVote(item.title, '찬성')}>찬성</button><button className="outline" type="button" onClick={() => savePolicyVote(item.title, '반대')}>반대</button>{votes[item.title] && <small>내 선택: {votes[item.title]}</small>}</div></div>)}</article>
+          <article className="design-card vote-list-card" id="policy-vote"><div className="design-title"><h2>정책 찬반 투표</h2><Link to="/suggestions">전체 보기</Link></div><p className="success-message">현재 투표는 진행하지 않습니다.</p>{policyVotes.map((item) => <div className="vote-item" key={item.title}><span className="round-icon"><Icon name="vote" /></span><div><h3>{item.title}</h3><p>{item.desc}</p></div><div className="vote-period"><b>투표 기간</b><span>추후 안내</span><small>참여자 0명</small></div><div className="vote-result"><p>찬성 <i><b style={{ width: `${item.yes}%` }} /></i> {item.yes}%</p><p>반대 <i><b style={{ width: `${item.no}%` }} /></i> {item.no}%</p></div><div><button type="button" disabled onClick={() => setVotes(votes)}>찬성</button><button className="outline" type="button" disabled>반대</button>{votes[item.title] && <small>내 선택: {votes[item.title]}</small>}</div></div>)}</article>
         </div>
-        <article className="design-card election-card" id="election-vote"><h2>바른생활부 차장 보궐선거</h2><p>바른생활부 차장 후보를 선택해 주세요.</p><div className="candidate-grid">{candidates.map((item, index) => <div className="candidate" key={item.name}><b>{index + 1}</b><div className="empty-photo">공석</div><strong>{item.name}</strong><span>바른생활부 차장 후보</span><p>{item.slogan}</p><button className={viewingCandidate === item.name ? 'selected' : ''} type="button" onClick={() => setViewingCandidate(item.name)}>후보 선택</button></div>)}</div><button className="design-primary" type="button" onClick={saveCandidateVote}>보궐선거 투표 참여하기</button>{candidate && <p className="success-message">{candidate} 후보에게 투표했습니다.</p>}</article>
+        <article className="design-card election-card" id="election-vote"><h2>바른생활부 차장 보궐선거</h2><p>현재 투표는 진행하지 않습니다.</p><div className="candidate-grid">{candidates.map((item, index) => <div className="candidate" key={item.name}><b>{index + 1}</b><div className="empty-photo">공석</div><strong>{item.name}</strong><span>바른생활부 차장 후보</span><p>{item.slogan}</p><button className={viewingCandidate === item.name ? 'selected' : ''} type="button" disabled onClick={() => setViewingCandidate(item.name)}>후보 선택</button></div>)}</div><button className="design-primary" type="button" disabled onClick={() => setCandidate(candidate)}>보궐선거 투표 중단</button>{candidate && <p className="success-message">{candidate} 후보에게 투표했습니다.</p>}</article>
       </section>
     </div>
   )

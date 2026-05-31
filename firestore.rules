@@ -239,6 +239,41 @@ service cloud.firestore {
         && data.reflection <= 100;
     }
 
+    function validVoteRecord(data, voteId) {
+      return data.keys().hasOnly(['id', 'email', 'name', 'target', 'choice', 'createdAt'])
+        && data.id is string
+        && data.id == voteId
+        && data.email is string
+        && data.name is string
+        && data.target is string
+        && data.choice is string
+        && data.createdAt is timestamp
+        && data.email.size() > 0
+        && data.name.size() > 0
+        && data.name.size() <= 20
+        && data.target.size() > 0
+        && data.target.size() <= 80
+        && data.choice.size() > 0
+        && data.choice.size() <= 80;
+    }
+
+    function validPledge(data, pledgeId) {
+      return data.keys().hasOnly(['id', 'title', 'description', 'status', 'progress', 'updatedAt'])
+        && data.id is string
+        && data.id == pledgeId
+        && data.title is string
+        && data.description is string
+        && data.status in ['예정', '진행중', '완료', '보류']
+        && data.progress is number
+        && data.updatedAt is timestamp
+        && data.title.size() > 0
+        && data.title.size() <= 100
+        && data.description.size() > 0
+        && data.description.size() <= 1000
+        && data.progress >= 0
+        && data.progress <= 100;
+    }
+
     function validSuspension(data, targetEmail) {
       return data.keys().hasOnly(['email', 'suspendedAt', 'suspendedBy'])
         && data.email is string
@@ -302,26 +337,46 @@ service cloud.firestore {
 
     match /policySuggestions/{suggestionId} {
       allow get, list: if true;
-      allow create: if isAllowedAccount() && validSuggestionCreate(request.resource.data, suggestionId);
-      allow update, delete: if isAdmin() && validSuggestion(request.resource.data, suggestionId);
+      allow create: if isAdmin() && validSuggestionCreate(request.resource.data, suggestionId);
+      allow update: if isAdmin()
+        && validSuggestion(request.resource.data, suggestionId)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
     }
 
     match /policySuggestionAuthors/{suggestionId} {
       allow get, list: if isAdmin();
-      allow create: if isAllowedAccount() && validSuggestionAuthor(request.resource.data, suggestionId);
+      allow create: if isAdmin() && validSuggestionAuthor(request.resource.data, suggestionId);
       allow update, delete: if isAdmin();
     }
 
     match /evaluationResponses/{targetEmail} {
-      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(targetEmail));
+      allow get: if isAdmin();
       allow list: if isAdmin();
-      allow create: if isAllowedAccount()
-        && isSelfEmail(targetEmail)
+      allow create: if isAdmin()
         && validEvaluationCreate(request.resource.data, targetEmail);
-      allow update: if isAllowedAccount()
-        && isSelfEmail(targetEmail)
+      allow update: if isAdmin()
         && validEvaluationUpdate(request.resource.data, targetEmail);
       allow delete: if false;
+    }
+
+    match /voteRecords/{voteId} {
+      allow get, list: if isAdmin();
+      allow create: if isAdmin()
+        && validVoteRecord(request.resource.data, voteId)
+        && isRequestTime(request.resource.data.createdAt);
+      allow update: if isAdmin()
+        && validVoteRecord(request.resource.data, voteId)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isAdmin();
+    }
+
+    match /pledgeProgress/{pledgeId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin()
+        && validPledge(request.resource.data, pledgeId)
+        && isRequestTime(request.resource.data.updatedAt);
+      allow delete: if isAdmin();
     }
 
     match /publicStats/{statId} {

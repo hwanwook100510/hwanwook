@@ -3,6 +3,7 @@ import type { Timestamp } from 'firebase/firestore'
 export type FirestoreTime = Timestamp | string
 
 export type Status = '학생회 내부 논의 중' | '구체화 중' | '선생님과 논의 중' | '허가' | '실행 중' | '완료'
+export type PledgeStatus = '예정' | '진행중' | '완료' | '보류'
 
 export type Member = {
   id: number
@@ -89,6 +90,24 @@ export type EvaluationResponse = EvaluationResult & {
   email: string
   name: string
   createdAt: FirestoreTime
+}
+
+export type VoteRecord = {
+  id: string
+  email: string
+  name: string
+  target: string
+  choice: string
+  createdAt: FirestoreTime
+}
+
+export type PledgeProgress = {
+  id: string
+  title: string
+  description: string
+  status: PledgeStatus
+  progress: number
+  updatedAt: FirestoreTime
 }
 
 export type ClubIntro = {

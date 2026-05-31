@@ -15,7 +15,9 @@ function getPriority(application: ClubApplication, club: string) {
 }
 
 function formatDate(value: ClubApplication['createdAt']) {
-  return typeof value === 'string' ? value : value.toDate().toISOString().slice(0, 10)
+  if (typeof value === 'string') return value
+
+  return typeof value.toDate === 'function' ? value.toDate().toISOString().slice(0, 10) : '방금'
 }
 
 function ClubDashboard() {
