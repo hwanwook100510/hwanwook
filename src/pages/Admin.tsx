@@ -8,11 +8,41 @@ import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, 
 
 const pledgeStatuses: PledgeStatus[] = ['예정', '진행중', '완료', '보류']
 const emptyPledgeForm = { id: '', title: '', description: '', status: '예정' as PledgeStatus, progress: '0' }
+const evaluationLabels = [
+  { key: 'promise', label: '공약' },
+  { key: 'communication', label: '소통' },
+  { key: 'event', label: '행사' },
+  { key: 'reflection', label: '복지' },
+] as const
 
 function formatTime(value: FirestoreTime) {
   if (typeof value === 'string') return value
 
   return typeof value.toDate === 'function' ? value.toDate().toLocaleString('ko-KR') : '방금'
+}
+
+function averageEvaluation(responses: EvaluationResponse[]) {
+  if (responses.length === 0) {
+    return { promise: 0, communication: 0, event: 0, reflection: 0, total: 0 }
+  }
+
+  const sums = responses.reduce((acc, response) => ({
+    promise: acc.promise + response.promise,
+    communication: acc.communication + response.communication,
+    event: acc.event + response.event,
+    reflection: acc.reflection + response.reflection,
+  }), { promise: 0, communication: 0, event: 0, reflection: 0 })
+  const averages = {
+    promise: sums.promise / responses.length,
+    communication: sums.communication / responses.length,
+    event: sums.event / responses.length,
+    reflection: sums.reflection / responses.length,
+  }
+
+  return {
+    ...averages,
+    total: (averages.promise + averages.communication + averages.event + averages.reflection) / 4,
+  }
 }
 
 function Admin() {
@@ -232,6 +262,8 @@ function Admin() {
     }
   }
 
+  const evaluationAverage = averageEvaluation(evaluationResponses)
+
   return (
     <section className="page-section">
       <SectionHeader
@@ -281,6 +313,14 @@ function Admin() {
       </div>
       <section className="content-section">
         <SectionHeader title="학생회 평가 조회" description="기존에 저장된 평가 응답은 관리자만 확인할 수 있습니다." />
+        <div className="admin-summary-card">
+          <strong>종합 만족도</strong>
+          <b>{evaluationAverage.total.toFixed(1)}점</b>
+          <span>100점 만점 · 응답 수 {evaluationResponses.length}명</span>
+          <div>
+            {evaluationLabels.map((item) => <p key={item.key}>{item.label} <b>{evaluationAverage[item.key].toFixed(1)}</b></p>)}
+          </div>
+        </div>
         <div className="admin-list">
           {evaluationResponses.length === 0 ? <p>저장된 평가 응답이 없습니다.</p> : evaluationResponses.map((response) => (
             <article className="admin-row" key={response.email}>

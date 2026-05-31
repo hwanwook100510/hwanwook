@@ -288,13 +288,19 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
 .club-gallery.selectable .club-photo-card div:last-child { display: grid; gap: 10px; }
 
 .admin-list { gap: 0; border: 1px solid var(--line); border-radius: var(--radius-lg); overflow: hidden; background: white; }
-.admin-list::before { content: '회원 정보  동아리  지위'; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) minmax(150px, 0.7fr); gap: 16px; padding: 12px 18px; color: var(--muted); background: #fffafd; border-bottom: 1px solid var(--line); font-size: 0.82rem; font-weight: 900; white-space: pre; }
+.admin-list > p { min-height: 120px; display: grid; place-items: center; margin: 0; padding: 24px; text-align: center; color: var(--muted); }
 .admin-row { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.8fr) minmax(150px, 0.7fr); gap: 16px; align-items: center; padding: 16px 18px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: white; }
 .admin-row:last-child { border-bottom: 0; }
 .admin-row strong, .admin-row span { display: block; }
 .admin-row strong { color: var(--navy); }
 .admin-row span { margin-top: 4px; color: var(--muted); font-size: 0.9rem; }
 .admin-row label { display: grid; gap: 6px; color: var(--muted); font-size: 0.82rem; font-weight: 900; }
+.admin-summary-card { display: grid; gap: 8px; margin-bottom: 14px; padding: 18px; border: 1px solid var(--line); border-radius: var(--radius-lg); background: white; }
+.admin-summary-card > b { color: var(--blue); font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1; }
+.admin-summary-card > span { color: var(--muted); font-weight: 800; }
+.admin-summary-card div { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.admin-summary-card p { margin: 0; padding: 12px; border-radius: var(--radius-md); background: var(--surface); color: var(--muted); font-weight: 900; }
+.admin-summary-card p b { display: block; margin-top: 4px; color: var(--navy); }
 .suggestion-card { margin-top: 0; background: white; }
 .suggestion-card strong { display: block; margin: 14px 0 4px; color: var(--navy); }
 
@@ -440,7 +446,7 @@ body:has(.home-page) { background: #fff; }
 .summary-card:nth-child(2), .link-card:nth-child(2) { border-color: var(--official-blue-strong); background: #fbfdff; }
 .summary-card:nth-child(3), .link-card:nth-child(3) { border-color: var(--line); background: var(--paper); }
 .status-board article, .notice-grid, .progress-table, .admin-list { border-color: var(--line); background: var(--card); }
-.notice-item:nth-child(2), .notice-item:nth-child(3), .table-head, .admin-list::before, .choice-selector, .student-summary, .mini-card { background: var(--surface); }
+.notice-item:nth-child(2), .notice-item:nth-child(3), .table-head, .choice-selector, .student-summary, .mini-card { background: var(--surface); }
 .home-card:hover, .policy-card:hover, .quick-grid a:hover, .summary-card:hover, .link-card:hover, .club-photo-card:hover, .suggestion-card:hover { box-shadow: var(--shadow-lift); }
 .eyebrow, .section-header span, .link-card .link-meta, .notice-item span, .suggestion-card span, .type-pill, .compact-list span, .club-tags span, .student-summary span, .choice-selector span, .member-card span { color: var(--blue); background: var(--accent-soft); border-color: var(--accent-line); }
 .policy-icon, .round-icon, .progress-summary-card li > span, .schedule-card-home time, .stat-grid article > svg, .step-card span, .value-card span, .history-line span { color: var(--blue); background: var(--accent-soft); }
@@ -702,7 +708,6 @@ main:has(.design-page) { width: 100%; }
   .notice-item { grid-template-columns: 1fr; gap: 8px; }
   .compact-list article { grid-template-columns: 1fr; }
   .club-list { grid-template-columns: 1fr; }
-  .admin-list::before { display: none; }
   .admin-list { border: 0; gap: 10px; overflow: visible; background: transparent; }
   .admin-row { grid-template-columns: 1fr; border: 1px solid var(--line); border-radius: var(--radius-md); }
   .stage-guide { grid-template-columns: 1fr; gap: 10px; padding: 16px; }
