@@ -39,8 +39,8 @@ export const progressItems: ProgressItem[] = [
 ]
 
 export const initialSuggestions: PolicySuggestion[] = [
-  { id: 101, title: '학생회 공지 통합 캘린더', category: '소통', content: '행사, 신청, 회의록 공개 일정을 한 달 단위로 볼 수 있으면 좋겠습니다.', effect: '공지 누락을 줄이고 학생 참여율을 높일 수 있습니다.', createdAt: '2026-05-07' },
-  { id: 102, title: '동아리실 사용 예약 현황 공개', category: '동아리', content: '동아리실 예약 가능 시간을 온라인에서 확인하고 싶습니다.', effect: '공간 사용 충돌을 줄이고 동아리 활동 계획을 세우기 쉬워집니다.', createdAt: '2026-05-10' },
+  { id: 'mock-101', title: '학생회 공지 통합 캘린더', category: '소통', content: '행사, 신청, 회의록 공개 일정을 한 달 단위로 볼 수 있으면 좋겠습니다.', effect: '공지 누락을 줄이고 학생 참여율을 높일 수 있습니다.', createdAt: '2026-05-07' },
+  { id: 'mock-102', title: '동아리실 사용 예약 현황 공개', category: '동아리', content: '동아리실 예약 가능 시간을 온라인에서 확인하고 싶습니다.', effect: '공간 사용 충돌을 줄이고 동아리 활동 계획을 세우기 쉬워집니다.', createdAt: '2026-05-10' },
 ]
 
 export const initialEvaluation: EvaluationResult = {

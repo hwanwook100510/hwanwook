@@ -6,57 +6,87 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function email() {
+      return request.auth.token.email;
+    }
+
     function isDimigoAccount() {
-      return signedIn() && request.auth.token.email.matches('.*@dimigo[.]hs[.]kr$');
+      return signedIn() && email().matches('.*@dimigo[.]hs[.]kr$');
+    }
+
+    function adminPath(targetEmail) {
+      return /databases/$(database)/documents/adminUsers/$(targetEmail);
+    }
+
+    function isBootstrapAdmin() {
+      return signedIn() && email() in ['hwanwook100510@gmail.com'];
     }
 
     function isAdmin() {
-      return signedIn() && request.auth.token.email in ['hwanwook100510@gmail.com'];
+      return isBootstrapAdmin() || (signedIn() && exists(adminPath(email())));
     }
 
     function isAllowedAccount() {
       return isDimigoAccount() || isAdmin();
     }
 
-    function isSelfEmail(email) {
-      return signedIn() && request.auth.token.email == email;
+    function isSelfEmail(targetEmail) {
+      return signedIn() && email() == targetEmail;
     }
 
-    function assignmentPath(email) {
-      return /databases/$(database)/documents/clubRoleAssignments/$(email);
+    function assignmentPath(targetEmail) {
+      return /databases/$(database)/documents/clubRoleAssignments/$(targetEmail);
     }
 
-    function isClubMember(club) {
-      return isAllowedAccount()
-        && exists(assignmentPath(request.auth.token.email))
-        && get(assignmentPath(request.auth.token.email)).data.club == club;
+    function applicationPath(targetEmail) {
+      return /databases/$(database)/documents/clubApplications/$(targetEmail);
+    }
+
+    function currentAssignment() {
+      return get(assignmentPath(email())).data;
     }
 
     function isClubLeader(club) {
-      return isClubMember(club)
-        && get(assignmentPath(request.auth.token.email)).data.role == '동아리장';
+      return isAllowedAccount()
+        && exists(assignmentPath(email()))
+        && currentAssignment().club == club
+        && currentAssignment().role == '동아리장';
     }
 
-    function validProfile(data, email) {
+    function choseClub(application, club) {
+      return application.firstChoice == club
+        || application.secondChoice == club
+        || application.thirdChoice == club;
+    }
+
+    function hasAppliedToClub(targetEmail, club) {
+      return exists(applicationPath(targetEmail))
+        && choseClub(get(applicationPath(targetEmail)).data, club);
+    }
+
+    function isRequestTime(value) {
+      return value is timestamp && value == request.time;
+    }
+
+    function validProfile(data, targetEmail) {
       return data.keys().hasOnly(['email', 'name', 'grade', 'classNumber', 'number', 'createdAt'])
         && data.email is string
         && data.name is string
         && data.grade is string
         && data.classNumber is string
         && data.number is string
-        && data.createdAt is string
-        && data.email == email
+        && data.createdAt is timestamp
+        && data.email == targetEmail
         && data.name.size() > 0
         && data.name.size() <= 20
         && data.grade in ['1', '2', '3']
         && data.classNumber.matches('[0-9]{1,2}')
-        && data.number.matches('[0-9]{1,2}')
-        && data.createdAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+        && data.number.matches('[0-9]{1,2}');
     }
 
-    function validApplication(data, email) {
+    function validApplication(data, targetEmail) {
       return data.keys().hasOnly(['id', 'email', 'name', 'grade', 'classNumber', 'number', 'firstChoice', 'secondChoice', 'thirdChoice', 'createdAt', 'locked', 'unlockedByAdmin'])
-        && data.id is number
+        && data.id is string
         && data.email is string
         && data.name is string
         && data.grade is string
@@ -65,10 +95,11 @@ service cloud.firestore {
         && data.firstChoice is string
         && data.secondChoice is string
         && data.thirdChoice is string
-        && data.createdAt is string
+        && data.createdAt is timestamp
         && data.locked is bool
         && data.unlockedByAdmin is bool
-        && data.email == email
+        && data.id == targetEmail
+        && data.email == targetEmail
         && data.name.size() > 0
         && data.name.size() <= 20
         && data.grade in ['1', '2', '3']
@@ -82,45 +113,60 @@ service cloud.firestore {
         && data.thirdChoice.size() <= 30
         && data.firstChoice != data.secondChoice
         && data.firstChoice != data.thirdChoice
-        && data.secondChoice != data.thirdChoice
-        && data.createdAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+        && data.secondChoice != data.thirdChoice;
     }
 
-    function validUserApplication(data, email) {
-      return validApplication(data, email)
+    function validUserApplicationCreate(data, targetEmail) {
+      return validApplication(data, targetEmail)
+        && isRequestTime(data.createdAt)
         && data.locked == true
         && data.unlockedByAdmin == false;
     }
 
-    function validAssignment(data, email) {
+    function validUserApplicationUpdate(data, targetEmail) {
+      return validApplication(data, targetEmail)
+        && data.createdAt == resource.data.createdAt
+        && data.locked == true
+        && data.unlockedByAdmin == false;
+    }
+
+    function validAssignment(data, targetEmail) {
       return data.keys().hasOnly(['email', 'club', 'role', 'updatedAt'])
         && data.email is string
-        && data.email == email
+        && data.email == targetEmail
         && data.club is string
         && data.role in ['동아리원', '동아리장']
-        && data.updatedAt is string
+        && data.updatedAt is timestamp
         && data.club.size() > 0
         && data.club.size() <= 30
-        && data.updatedAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+        && isRequestTime(data.updatedAt);
+    }
+
+    function validLeaderAssignedMember(data, targetEmail) {
+      return validAssignment(data, targetEmail)
+        && data.role == '동아리원'
+        && isClubLeader(data.club)
+        && hasAppliedToClub(targetEmail, data.club);
     }
 
     function validIntro(data, club) {
       return data.keys().hasOnly(['club', 'intro', 'updatedAt'])
         && data.club == club
         && data.intro is string
-        && data.updatedAt is string
+        && data.updatedAt is timestamp
         && data.intro.size() <= 1500
-        && data.updatedAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+        && isRequestTime(data.updatedAt);
     }
 
-    function validSuggestion(data) {
+    function validSuggestion(data, suggestionId) {
       return data.keys().hasOnly(['id', 'title', 'category', 'content', 'effect', 'createdAt', 'isAnonymous'])
-        && data.id is number
+        && data.id is string
+        && data.id == suggestionId
         && data.title is string
         && data.category is string
         && data.content is string
         && data.effect is string
-        && data.createdAt is string
+        && data.createdAt is timestamp
         && data.isAnonymous is bool
         && data.title.size() > 0
         && data.title.size() <= 80
@@ -129,33 +175,36 @@ service cloud.firestore {
         && data.content.size() > 0
         && data.content.size() <= 1000
         && data.effect.size() > 0
-        && data.effect.size() <= 500
-        && data.createdAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+        && data.effect.size() <= 500;
     }
 
-    function validSuggestionAuthor(data) {
+    function validSuggestionCreate(data, suggestionId) {
+      return validSuggestion(data, suggestionId) && isRequestTime(data.createdAt);
+    }
+
+    function validSuggestionAuthor(data, suggestionId) {
       return data.keys().hasOnly(['suggestionId', 'authorEmail', 'authorName'])
-        && data.suggestionId is number
+        && data.suggestionId is string
+        && data.suggestionId == suggestionId
         && data.authorEmail is string
         && data.authorName is string
-        && data.authorEmail == request.auth.token.email
+        && data.authorEmail == email()
         && data.authorName.size() > 0
         && data.authorName.size() <= 20;
     }
 
-    function validEvaluation(data, email) {
+    function validEvaluation(data, targetEmail) {
       return data.keys().hasOnly(['email', 'name', 'createdAt', 'promise', 'communication', 'event', 'reflection'])
         && data.email is string
         && data.name is string
-        && data.createdAt is string
+        && data.createdAt is timestamp
         && data.promise is number
         && data.communication is number
         && data.event is number
         && data.reflection is number
-        && data.email == email
+        && data.email == targetEmail
         && data.name.size() > 0
         && data.name.size() <= 20
-        && data.createdAt.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
         && data.promise >= 0
         && data.promise <= 100
         && data.communication >= 0
@@ -164,6 +213,14 @@ service cloud.firestore {
         && data.event <= 100
         && data.reflection >= 0
         && data.reflection <= 100;
+    }
+
+    function validEvaluationCreate(data, targetEmail) {
+      return validEvaluation(data, targetEmail) && isRequestTime(data.createdAt);
+    }
+
+    function validEvaluationUpdate(data, targetEmail) {
+      return validEvaluation(data, targetEmail) && isRequestTime(data.createdAt);
     }
 
     function validSummary(data) {
@@ -182,51 +239,58 @@ service cloud.firestore {
         && data.reflection <= 100;
     }
 
-    function validSuspension(data, email) {
+    function validSuspension(data, targetEmail) {
       return data.keys().hasOnly(['email', 'suspendedAt', 'suspendedBy'])
         && data.email is string
-        && data.suspendedAt is string
+        && data.suspendedAt is timestamp
         && data.suspendedBy is string
-        && data.email == email
-        && data.suspendedAt.size() <= 40
-        && data.suspendedBy == request.auth.token.email;
+        && data.email == targetEmail
+        && data.suspendedBy == email()
+        && isRequestTime(data.suspendedAt);
     }
 
-    match /studentProfiles/{email} {
-      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(email));
+    match /studentProfiles/{targetEmail} {
+      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(targetEmail));
       allow list: if isAdmin();
       allow create: if isAllowedAccount()
-        && isSelfEmail(email)
-        && validProfile(request.resource.data, email);
-      allow create, update: if isAdmin() && validProfile(request.resource.data, email);
+        && isSelfEmail(targetEmail)
+        && validProfile(request.resource.data, targetEmail)
+        && isRequestTime(request.resource.data.createdAt);
+      allow update: if isAdmin() && validProfile(request.resource.data, targetEmail);
       allow delete: if false;
     }
 
-    match /clubApplications/{email} {
+    match /clubApplications/{targetEmail} {
       allow get: if isAdmin()
-        || (isAllowedAccount() && isSelfEmail(email))
-        || isClubMember(resource.data.firstChoice)
-        || isClubMember(resource.data.secondChoice)
-        || isClubMember(resource.data.thirdChoice);
+        || (isAllowedAccount() && isSelfEmail(targetEmail))
+        || isClubLeader(resource.data.firstChoice)
+        || isClubLeader(resource.data.secondChoice)
+        || isClubLeader(resource.data.thirdChoice);
       allow list: if isAdmin()
-        || isClubMember(resource.data.firstChoice)
-        || isClubMember(resource.data.secondChoice)
-        || isClubMember(resource.data.thirdChoice);
+        || isClubLeader(resource.data.firstChoice)
+        || isClubLeader(resource.data.secondChoice)
+        || isClubLeader(resource.data.thirdChoice);
       allow create: if isAllowedAccount()
-        && isSelfEmail(email)
-        && validUserApplication(request.resource.data, email);
+        && isSelfEmail(targetEmail)
+        && validUserApplicationCreate(request.resource.data, targetEmail);
       allow update: if isAllowedAccount()
-        && isSelfEmail(email)
+        && isSelfEmail(targetEmail)
         && resource.data.unlockedByAdmin == true
-        && validUserApplication(request.resource.data, email);
-      allow create, update: if isAdmin() && validApplication(request.resource.data, email);
+        && validUserApplicationUpdate(request.resource.data, targetEmail);
+      allow create: if isAdmin()
+        && validApplication(request.resource.data, targetEmail)
+        && isRequestTime(request.resource.data.createdAt);
+      allow update: if isAdmin()
+        && validApplication(request.resource.data, targetEmail)
+        && request.resource.data.createdAt == resource.data.createdAt;
       allow delete: if false;
     }
 
-    match /clubRoleAssignments/{email} {
-      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(email));
+    match /clubRoleAssignments/{targetEmail} {
+      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(targetEmail));
       allow list, delete: if isAdmin();
-      allow create, update: if isAdmin() && validAssignment(request.resource.data, email);
+      allow create, update: if isAdmin() && validAssignment(request.resource.data, targetEmail);
+      allow create, update: if validLeaderAssignedMember(request.resource.data, targetEmail);
     }
 
     match /clubIntros/{club} {
@@ -237,23 +301,26 @@ service cloud.firestore {
     }
 
     match /policySuggestions/{suggestionId} {
-      allow get, list: if isAllowedAccount();
-      allow create: if isAllowedAccount() && validSuggestion(request.resource.data);
-      allow update, delete: if isAdmin() && validSuggestion(request.resource.data);
+      allow get, list: if true;
+      allow create: if isAllowedAccount() && validSuggestionCreate(request.resource.data, suggestionId);
+      allow update, delete: if isAdmin() && validSuggestion(request.resource.data, suggestionId);
     }
 
     match /policySuggestionAuthors/{suggestionId} {
       allow get, list: if isAdmin();
-      allow create: if isAllowedAccount() && validSuggestionAuthor(request.resource.data);
+      allow create: if isAllowedAccount() && validSuggestionAuthor(request.resource.data, suggestionId);
       allow update, delete: if isAdmin();
     }
 
-    match /evaluationResponses/{email} {
-      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(email));
+    match /evaluationResponses/{targetEmail} {
+      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(targetEmail));
       allow list: if isAdmin();
-      allow create, update: if isAllowedAccount()
-        && isSelfEmail(email)
-        && validEvaluation(request.resource.data, email);
+      allow create: if isAllowedAccount()
+        && isSelfEmail(targetEmail)
+        && validEvaluationCreate(request.resource.data, targetEmail);
+      allow update: if isAllowedAccount()
+        && isSelfEmail(targetEmail)
+        && validEvaluationUpdate(request.resource.data, targetEmail);
       allow delete: if false;
     }
 
@@ -263,12 +330,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /suspendedUsers/{email} {
-      allow get: if isAdmin() || (signedIn() && isSelfEmail(email));
+    match /suspendedUsers/{targetEmail} {
+      allow get: if isAdmin() || (signedIn() && isSelfEmail(targetEmail));
       allow list, delete: if isAdmin();
       allow create, update: if isAdmin()
-        && !isSelfEmail(email)
-        && validSuspension(request.resource.data, email);
+        && !isSelfEmail(targetEmail)
+        && validSuspension(request.resource.data, targetEmail);
+    }
+
+    match /adminUsers/{targetEmail} {
+      allow get: if isBootstrapAdmin() || (isAdmin() && isSelfEmail(targetEmail));
+      allow list, create, update, delete: if isBootstrapAdmin();
     }
 
     match /{document=**} {

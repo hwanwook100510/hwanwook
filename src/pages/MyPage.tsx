@@ -2,13 +2,12 @@ import { Navigate } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { useStudentProfile } from '../hooks/useStudentProfile'
-import { isAdminEmail } from '../utils/permissions'
 
 function MyPage() {
-  const { user } = useAuth()
+  const { isAdmin } = useAuth()
   const { profile, loading } = useStudentProfile()
 
-  if (isAdminEmail(user?.email)) {
+  if (isAdmin) {
     return <Navigate to="/admin" replace />
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { collection, doc, getDoc, getDocs, query, setDoc, where } from 'firebase/firestore'
+import { collection, doc, getDoc, getDocs, query, serverTimestamp, setDoc, where } from 'firebase/firestore'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
@@ -12,6 +12,10 @@ function getPriority(application: ClubApplication, club: string) {
   if (application.secondChoice === club) return '2순위'
   if (application.thirdChoice === club) return '3순위'
   return ''
+}
+
+function formatDate(value: ClubApplication['createdAt']) {
+  return typeof value === 'string' ? value : value.toDate().toISOString().slice(0, 10)
 }
 
 function ClubDashboard() {
@@ -51,25 +55,31 @@ function ClubDashboard() {
         return
       }
 
-      const [firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot, introSnapshot] = await Promise.all([
-        getDocs(query(collection(db!, 'clubApplications'), where('firstChoice', '==', assignedClub.name))),
-        getDocs(query(collection(db!, 'clubApplications'), where('secondChoice', '==', assignedClub.name))),
-        getDocs(query(collection(db!, 'clubApplications'), where('thirdChoice', '==', assignedClub.name))),
-        getDoc(doc(db!, 'clubIntros', assignedClub.name)),
-      ])
+      let loadedApplications: ClubApplication[] = []
 
-      const applicationMap = new Map<number, ClubApplication>()
-      ;[firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot].forEach((snapshot) => {
-        snapshot.docs.forEach((item) => {
-          const application = item.data() as ClubApplication
-          applicationMap.set(application.id, application)
+      if (loadedAssignment.role === '동아리장') {
+        const [firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot] = await Promise.all([
+          getDocs(query(collection(db!, 'clubApplications'), where('firstChoice', '==', assignedClub.name))),
+          getDocs(query(collection(db!, 'clubApplications'), where('secondChoice', '==', assignedClub.name))),
+          getDocs(query(collection(db!, 'clubApplications'), where('thirdChoice', '==', assignedClub.name))),
+        ])
+
+        const applicationMap = new Map<string, ClubApplication>()
+        ;[firstChoiceSnapshot, secondChoiceSnapshot, thirdChoiceSnapshot].forEach((snapshot) => {
+          snapshot.docs.forEach((item) => {
+            const application = item.data() as ClubApplication
+            applicationMap.set(application.id, application)
+          })
         })
-      })
 
+        loadedApplications = Array.from(applicationMap.values())
+      }
+
+      const introSnapshot = await getDoc(doc(db!, 'clubIntros', assignedClub.name))
       const loadedIntro = introSnapshot.exists() ? introSnapshot.data() as ClubIntro : null
 
       setRemoteAssignments([loadedAssignment])
-      setRemoteApplications(Array.from(applicationMap.values()))
+      setRemoteApplications(loadedApplications)
       setRemoteIntros(loadedIntro ? [loadedIntro] : [])
 
       if (loadedIntro) {
@@ -100,14 +110,19 @@ function ClubDashboard() {
     const nextIntro: ClubIntro = {
       club: club.name,
       intro: intro.trim(),
-      updatedAt: new Date().toISOString().slice(0, 10),
+      updatedAt: serverTimestamp() as unknown as ClubIntro['updatedAt'],
     }
 
     const nextIntros = [nextIntro, ...remoteIntros.filter((item) => item.club !== club.name)]
-    setRemoteIntros(nextIntros)
 
-    if (db) {
+    if (!db) { setMessage('DB에 연결할 수 없어 동아리 소개글을 저장하지 못했습니다.'); return }
+
+    try {
       await setDoc(doc(db, 'clubIntros', club.name), nextIntro, { merge: true })
+      setRemoteIntros(nextIntros)
+      setMessage('동아리 소개글이 저장되었습니다.')
+    } catch {
+      setMessage('동아리 소개글 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
@@ -118,16 +133,18 @@ function ClubDashboard() {
       email,
       club: club.name,
       role: '동아리원',
-      updatedAt: new Date().toISOString().slice(0, 10),
+      updatedAt: serverTimestamp() as unknown as ClubRoleAssignment['updatedAt'],
     }
 
-    setRemoteAssignments([nextAssignment, ...remoteAssignments.filter((item) => item.email !== email)])
+    if (!db) { setMessage('DB에 연결할 수 없어 동아리원 권한을 저장하지 못했습니다.'); return }
 
-    if (db) {
+    try {
       await setDoc(doc(db, 'clubRoleAssignments', email), nextAssignment, { merge: true })
+      setRemoteAssignments([nextAssignment, ...remoteAssignments.filter((item) => item.email !== email)])
+      setMessage(`${email} 학생에게 ${club.name} 동아리원 권한을 부여했습니다.`)
+    } catch {
+      setMessage('동아리원 권한 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
-
-    setMessage(`${email} 학생에게 ${club.name} 동아리원 권한을 부여했습니다.`)
   }
 
   return (
@@ -160,19 +177,19 @@ function ClubDashboard() {
         ) : (
           <div className="form-card">
             <h3>동아리원 권한</h3>
-            <p>동아리원은 지원서 확인이 가능하고, 소개글 수정은 동아리장만 할 수 있습니다.</p>
+            <p>동아리원은 소개글만 확인할 수 있고, 지원서 개인정보 열람과 소개글 수정은 동아리장만 할 수 있습니다.</p>
           </div>
         )}
       </div>
       <section className="content-section">
-        <SectionHeader title="우리 동아리 지원서" description="1순위, 2순위, 3순위 중 우리 동아리를 선택한 지원자 명단입니다." />
+        <SectionHeader title="우리 동아리 지원서" description="동아리장만 지원자 개인정보와 지원 현황을 확인할 수 있습니다." />
         {message && <p className="success-message">{message}</p>}
         <div className="admin-list">
           {clubApplications.length === 0 ? <p>아직 이 동아리에 들어온 지원서가 없습니다.</p> : clubApplications.map((application) => (
             <article className="admin-row" key={application.id}>
               <div>
                 <strong>{application.name}</strong>
-                <span>{application.grade}학년 {application.classNumber}반 {application.number}번 · {getPriority(application, club.name)} · {application.createdAt}</span>
+                <span>{application.grade}학년 {application.classNumber}반 {application.number}번 · {getPriority(application, club.name)} · {formatDate(application.createdAt)}</span>
               </div>
               <ol className="choice-list">
                 <li>1순위: {application.firstChoice}</li>

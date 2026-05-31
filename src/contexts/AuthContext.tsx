@@ -4,14 +4,14 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
-import { ADMIN_EMAILS, normalizeEmail } from '../utils/permissions'
+import { ADMIN_EMAILS, isAdminEmail, normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
 
 const DIMIGO_DOMAIN = '@dimigo.hs.kr'
 const ALLOWED_EMAILS = ADMIN_EMAILS
 const DOMAIN_ERROR = '한국디지털미디어고등학교 계정만 로그인할 수 있습니다.'
-const CONFIG_ERROR = 'Firebase 설정이 아직 완료되지 않았습니다. .env 파일을 먼저 설정해주세요.'
+const CONFIG_ERROR = '서비스 설정이 아직 완료되지 않았습니다. 관리자에게 문의해주세요.'
 
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
@@ -28,8 +28,26 @@ async function isSuspendedEmail(email: string | null) {
   return snapshot.exists()
 }
 
+async function loadAdminStatus(email: string | null) {
+  if (!db || !email) {
+    return false
+  }
+
+  if (isAdminEmail(email)) {
+    return true
+  }
+
+  try {
+    const snapshot = await getDoc(doc(db, 'adminUsers', normalizeEmail(email)))
+    return snapshot.exists()
+  } catch {
+    return false
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(isFirebaseConfigured)
   const [error, setError] = useState(isFirebaseConfigured ? '' : CONFIG_ERROR)
 
@@ -43,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
       if (currentUser && !isAllowedEmail(currentUser.email)) {
         setUser(null)
+        setIsAdmin(false)
         setError(DOMAIN_ERROR)
         await signOut(firebaseAuth)
         setLoading(false)
@@ -51,6 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (currentUser && await isSuspendedEmail(currentUser.email)) {
         setUser(null)
+        setIsAdmin(false)
         setError('')
         await signOut(firebaseAuth)
         setLoading(false)
@@ -58,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(currentUser)
+      setIsAdmin(await loadAdminStatus(currentUser?.email ?? null))
       setLoading(false)
     })
 
@@ -75,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!isAllowedEmail(result.user.email)) {
       setUser(null)
+      setIsAdmin(false)
       setError(DOMAIN_ERROR)
       await signOut(auth)
       return
@@ -82,12 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (await isSuspendedEmail(result.user.email)) {
       setUser(null)
+      setIsAdmin(false)
       setError('')
       await signOut(auth)
       return
     }
 
     setUser(result.user)
+    setIsAdmin(await loadAdminStatus(result.user.email))
   }
 
   const logout = async () => {
@@ -95,21 +119,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!auth) {
       setUser(null)
+      setIsAdmin(false)
       return
     }
 
     await signOut(auth)
     setUser(null)
+    setIsAdmin(false)
   }
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
+    isAdmin,
     loading,
     error,
     loginWithGoogle,
     logout,
     clearError: () => setError(''),
-  }), [user, loading, error])
+  }), [user, isAdmin, loading, error])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

@@ -4,7 +4,6 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
 import { useStudentProfile } from '../hooks/useStudentProfile'
-import { isAdminEmail } from '../utils/permissions'
 import AuthButton from './AuthButton'
 
 const navigation = [
@@ -24,10 +23,9 @@ type LayoutProps = {
 
 function Layout({ children }: LayoutProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { profile } = useStudentProfile()
   const [remoteClubPermission, setRemoteClubPermission] = useState<{ email: string, hasPermission: boolean } | null>(null)
-  const isAdmin = isAdminEmail(user?.email)
   const userEmail = user?.email
   const hasRemoteClubPermission = Boolean(userEmail && remoteClubPermission?.email === userEmail && remoteClubPermission.hasPermission)
   const hasClubPermission = hasRemoteClubPermission

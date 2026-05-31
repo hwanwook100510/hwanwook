@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { doc, setDoc } from 'firebase/firestore'
+import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import AuthButton from '../components/AuthButton'
 import SectionHeader from '../components/SectionHeader'
@@ -8,7 +8,6 @@ import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 import type { StudentProfile } from '../types'
-import { isAdminEmail } from '../utils/permissions'
 
 const emptyForm = {
   grade: '1',
@@ -18,7 +17,7 @@ const emptyForm = {
 }
 
 function Register() {
-  const { user, loading } = useAuth()
+  const { user, isAdmin, loading } = useAuth()
   const location = useLocation()
   const { profile, loading: profileLoading } = useStudentProfile()
   const [form, setForm] = useState(emptyForm)
@@ -40,19 +39,23 @@ function Register() {
       grade: form.grade,
       classNumber: form.classNumber.trim(),
       number: form.number.trim(),
-      createdAt: new Date().toISOString().slice(0, 10),
+      createdAt: serverTimestamp() as unknown as StudentProfile['createdAt'],
     }
 
     if (db) {
-      await setDoc(doc(db, 'studentProfiles', user.email), profile, { merge: true })
-      setMessage('회원가입 정보가 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
+      try {
+        await setDoc(doc(db, 'studentProfiles', user.email), profile)
+        setMessage('회원가입 정보가 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
+      } catch {
+        setMessage('회원가입 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      }
       return
     }
 
-    setMessage('Firestore 연결을 확인할 수 없어 회원가입 정보를 저장하지 못했습니다.')
+    setMessage('DB에 연결할 수 없어 회원가입 정보를 저장하지 못했습니다.')
   }
 
-  if (isAdminEmail(user?.email)) {
+  if (isAdmin) {
     return <Navigate to="/admin" replace />
   }
 

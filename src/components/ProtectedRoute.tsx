@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
+import AuthButton from './AuthButton'
 import { useAuth } from '../contexts/useAuth'
 import { useStudentProfile } from '../hooks/useStudentProfile'
-import { isAdminEmail } from '../utils/permissions'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth()
+  const { user, isAdmin, loading } = useAuth()
   const { profile, loading: profileLoading } = useStudentProfile()
   const location = useLocation()
 
@@ -14,15 +14,15 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }
 
   if (!user) {
-    return <Navigate to="/register" replace state={{ from: location }} />
+    return <section className="page-section auth-page"><div className="auth-card"><h3>로그인이 필요한 기능입니다</h3><p>이 기능은 로그인 후 사용할 수 있습니다.</p><AuthButton /></div></section>
   }
 
-  if (!isAdminEmail(user.email) && profileLoading) {
+  if (!isAdmin && profileLoading) {
     return <div className="auth-card"><p>학생 정보를 확인하고 있습니다.</p></div>
   }
 
-  if (!isAdminEmail(user.email) && !profile && location.pathname !== '/register') {
-    return <Navigate to="/register" replace state={{ from: location }} />
+  if (!isAdmin && !profile && location.pathname !== '/register') {
+    return <section className="page-section auth-page"><div className="auth-card"><h3>회원가입 정보가 필요합니다</h3><p>개인정보를 사용하는 기능은 학생 정보를 먼저 등록해야 합니다.</p><Link className="primary-button" to="/register" state={{ from: location }}>회원가입 정보 등록</Link></div></section>
   }
 
   return children

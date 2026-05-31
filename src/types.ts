@@ -1,3 +1,7 @@
+import type { Timestamp } from 'firebase/firestore'
+
+export type FirestoreTime = Timestamp | string
+
 export type Status = '학생회 내부 논의 중' | '구체화 중' | '선생님과 논의 중' | '허가' | '실행 중' | '완료'
 
 export type Member = {
@@ -18,19 +22,19 @@ export type ProgressItem = {
 }
 
 export type PolicySuggestion = {
-  id: number
+  id: string
   title: string
   category: string
   content: string
   effect: string
-  createdAt: string
+  createdAt: FirestoreTime
   authorEmail?: string
   authorName?: string
   isAnonymous?: boolean
 }
 
 export type PolicySuggestionAuthor = {
-  suggestionId: number
+  suggestionId: string
   authorEmail: string
   authorName: string
 }
@@ -43,7 +47,7 @@ export type EvaluationResult = {
 }
 
 export type ClubApplication = {
-  id: number
+  id: string
   email: string
   name: string
   grade: string
@@ -52,7 +56,7 @@ export type ClubApplication = {
   firstChoice: string
   secondChoice: string
   thirdChoice: string
-  createdAt: string
+  createdAt: FirestoreTime
   locked?: boolean
   unlockedByAdmin?: boolean
 }
@@ -63,7 +67,7 @@ export type StudentProfile = {
   grade: string
   classNumber: string
   number: string
-  createdAt: string
+  createdAt: FirestoreTime
 }
 
 export type ClubRole = '동아리원' | '동아리장'
@@ -72,25 +76,25 @@ export type ClubRoleAssignment = {
   email: string
   club: string
   role: ClubRole
-  updatedAt: string
+  updatedAt: FirestoreTime
 }
 
 export type AccountSuspension = {
   email: string
-  suspendedAt: string
+  suspendedAt: FirestoreTime
   suspendedBy: string
 }
 
 export type EvaluationResponse = EvaluationResult & {
   email: string
   name: string
-  createdAt: string
+  createdAt: FirestoreTime
 }
 
 export type ClubIntro = {
   club: string
   intro: string
-  updatedAt: string
+  updatedAt: FirestoreTime
 }
 
 export type Notice = {

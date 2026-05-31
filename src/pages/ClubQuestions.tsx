@@ -31,7 +31,7 @@ function ClubQuestions() {
     event.preventDefault()
 
     if (!user?.email) {
-      setMessage('로그인 정보를 확인할 수 없습니다.')
+      setMessage('이 기능은 로그인 후 사용할 수 있습니다.')
       return
     }
 

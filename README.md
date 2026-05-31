@@ -152,3 +152,24 @@ firebase deploy --only firestore:rules
 ## 참고
 
 Tailwind CSS는 기본 설치되어 있지 않아 일반 CSS로 반응형 UI를 구현했습니다.
+
+## 보안 운영 체크리스트
+
+- `.env`, `.env.*`, 빌드 산출물, 압축 파일은 Git에 포함하지 않습니다.
+- Firebase Web API key는 브라우저 번들에 포함될 수 있으므로 Google Cloud Console에서 `https://hwanwook.vercel.app/*`와 개발용 `http://localhost:5173/*` 같은 허용 도메인으로 제한합니다.
+- Firebase App Check를 활성화하려면 reCAPTCHA v3 사이트 키를 `VITE_FIREBASE_APPCHECK_SITE_KEY`에 설정합니다.
+- 개발 환경에서 App Check 디버그가 필요하면 `VITE_FIREBASE_APPCHECK_DEBUG_TOKEN`을 로컬 `.env`에만 설정하고, 해당 토큰을 Firebase Console의 App Check debug token에 등록합니다.
+- Firestore Rules는 권한 판단의 단일 소스입니다. 클라이언트의 관리자 표시 여부는 UI 보조 수단일 뿐입니다.
+- Rules 수정 후에는 반드시 배포합니다.
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+- 코드 배포 전 검증 명령어:
+
+```bash
+npm run build
+npm run lint
+npm audit
+```

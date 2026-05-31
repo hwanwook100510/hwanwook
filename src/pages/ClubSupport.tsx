@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
@@ -71,10 +71,28 @@ function ClubSupport() {
     if (isPastDeadline && savedApplication?.unlockedByAdmin !== true) { setMessage('동아리 지원 기간이 마감되었습니다.'); return }
     if (isLocked) { setMessage('이미 제출한 지원서는 수정할 수 없습니다. 수정이 필요하면 관리자에게 요청해주세요.'); return }
     if ([form.firstChoice, form.secondChoice, form.thirdChoice].some((club) => !club)) { setMessage('1순위, 2순위, 3순위 동아리를 모두 선택해주세요.'); return }
-    const application = { id: savedApplication?.id ?? Date.now(), email: user.email, name: profile.name, grade: profile.grade, classNumber: profile.classNumber, number: profile.number, ...form, createdAt: savedApplication?.createdAt ?? new Date().toISOString().slice(0, 10), locked: true, unlockedByAdmin: false }
-    setSavedApplication(application)
-    if (db) await setDoc(doc(db, 'clubApplications', user.email), application)
-    setMessage('동아리 지원서가 저장되었습니다.')
+    if (!db) { setMessage('DB에 연결할 수 없어 지원서를 저장하지 못했습니다.'); return }
+
+    const application: ClubApplication = {
+      id: user.email,
+      email: user.email,
+      name: profile.name,
+      grade: profile.grade,
+      classNumber: profile.classNumber,
+      number: profile.number,
+      ...form,
+      createdAt: savedApplication?.createdAt ?? serverTimestamp() as unknown as ClubApplication['createdAt'],
+      locked: true,
+      unlockedByAdmin: false,
+    }
+
+    try {
+      await setDoc(doc(db, 'clubApplications', user.email), application)
+      setSavedApplication(application)
+      setMessage('동아리 지원서가 저장되었습니다.')
+    } catch {
+      setMessage('동아리 지원서 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   return (

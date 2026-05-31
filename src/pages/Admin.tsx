@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
-import { collection, deleteDoc, doc, getDocs, setDoc } from 'firebase/firestore'
+import { collection, deleteDoc, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
 import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, StudentProfile } from '../types'
-import { isAdminEmail } from '../utils/permissions'
 
 function Admin() {
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
   const [visibleProfiles, setVisibleProfiles] = useState<StudentProfile[]>([])
   const [visibleAssignments, setVisibleAssignments] = useState<ClubRoleAssignment[]>([])
   const [applications, setApplications] = useState<ClubApplication[]>([])
@@ -16,7 +15,7 @@ function Admin() {
   const [message, setMessage] = useState('')
 
   useEffect(() => {
-    if (!db || !isAdminEmail(user?.email)) {
+    if (!db || !isAdmin) {
       return
     }
 
@@ -38,14 +37,14 @@ function Admin() {
         setApplications(remoteApplications)
         setSuspensions(remoteSuspensions)
       } catch {
-        setMessage('Firestore 데이터를 불러오지 못했습니다. Firebase Console에서 Firestore Database를 활성화했는지 확인해주세요.')
+        setMessage('DB 데이터를 불러오지 못했습니다. DB 설정과 권한을 확인해주세요.')
       }
     }
 
     void loadAdminData()
-  }, [user?.email])
+  }, [isAdmin, user?.email])
 
-  if (!isAdminEmail(user?.email)) {
+  if (!isAdmin) {
     return (
       <section className="page-section">
         <SectionHeader eyebrow="Admin" title="접근 권한이 없습니다" description="관리자 계정으로 로그인해야 사용할 수 있는 페이지입니다." />
@@ -69,14 +68,16 @@ function Admin() {
       email,
       club: field === 'club' ? value : current?.club ?? clubs[0].name,
       role: field === 'role' ? value as ClubRole : current?.role ?? '동아리원',
-      updatedAt: new Date().toISOString().slice(0, 10),
+      updatedAt: serverTimestamp() as unknown as ClubRoleAssignment['updatedAt'],
     }
 
     const nextAssignments = [nextAssignment, ...visibleAssignments.filter((assignment) => assignment.email !== email)]
-    setVisibleAssignments(nextAssignments)
 
-    if (db) {
-      await setDoc(doc(db, 'clubRoleAssignments', email), nextAssignment, { merge: true })
+    try {
+      await setDoc(doc(db!, 'clubRoleAssignments', email), nextAssignment, { merge: true })
+      setVisibleAssignments(nextAssignments)
+    } catch {
+      setMessage('동아리 권한 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
@@ -86,10 +87,11 @@ function Admin() {
     if (!current) return
 
     const nextProfile = { ...current, [field]: value }
-    setVisibleProfiles(visibleProfiles.map((profile) => profile.email === email ? nextProfile : profile))
-
-    if (db) {
-      await setDoc(doc(db, 'studentProfiles', email), nextProfile, { merge: true })
+    try {
+      await setDoc(doc(db!, 'studentProfiles', email), nextProfile, { merge: true })
+      setVisibleProfiles(visibleProfiles.map((profile) => profile.email === email ? nextProfile : profile))
+    } catch {
+      setMessage('학생 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
@@ -102,46 +104,54 @@ function Admin() {
     }
 
     const nextApplication = { ...current, locked: false, unlockedByAdmin: true }
-    setApplications(applications.map((application) => application.email === email ? nextApplication : application))
-
-    if (db) {
-      await setDoc(doc(db, 'clubApplications', email), nextApplication, { merge: true })
+    try {
+      await setDoc(doc(db!, 'clubApplications', email), nextApplication, { merge: true })
+      setApplications(applications.map((application) => application.email === email ? nextApplication : application))
+      setMessage(`${email} 지원서 수정을 다시 허용했습니다.`)
+    } catch {
+      setMessage('지원서 수정 허용 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
     }
-
-    setMessage(`${email} 지원서 수정을 다시 허용했습니다.`)
   }
 
   const suspendAccount = async (email: string) => {
     if (!db) {
-      setMessage('Firestore가 연결되어야 계정을 정지할 수 있습니다.')
+      setMessage('DB에 연결할 수 없어 계정을 정지할 수 없습니다.')
       return
     }
 
-    if (isAdminEmail(email)) {
+    if (user?.email === email) {
       setMessage('관리자 계정은 정지할 수 없습니다.')
       return
     }
 
     const suspension: AccountSuspension = {
       email,
-      suspendedAt: new Date().toISOString(),
+      suspendedAt: serverTimestamp() as unknown as AccountSuspension['suspendedAt'],
       suspendedBy: user?.email ?? 'admin',
     }
 
-    setSuspensions([suspension, ...suspensions.filter((item) => item.email !== email)])
-    await setDoc(doc(db, 'suspendedUsers', email), suspension, { merge: true })
-    setMessage(`${email} 계정을 정지했습니다.`)
+    try {
+      await setDoc(doc(db, 'suspendedUsers', email), suspension, { merge: true })
+      setSuspensions([suspension, ...suspensions.filter((item) => item.email !== email)])
+      setMessage(`${email} 계정을 정지했습니다.`)
+    } catch {
+      setMessage('계정 정지 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   const restoreAccount = async (email: string) => {
     if (!db) {
-      setMessage('Firestore가 연결되어야 계정 정지를 해제할 수 있습니다.')
+      setMessage('DB에 연결할 수 없어 계정 정지를 해제할 수 없습니다.')
       return
     }
 
-    setSuspensions(suspensions.filter((item) => item.email !== email))
-    await deleteDoc(doc(db, 'suspendedUsers', email))
-    setMessage(`${email} 계정 정지를 해제했습니다.`)
+    try {
+      await deleteDoc(doc(db, 'suspendedUsers', email))
+      setSuspensions(suspensions.filter((item) => item.email !== email))
+      setMessage(`${email} 계정 정지를 해제했습니다.`)
+    } catch {
+      setMessage('계정 정지 해제에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
   }
 
   return (

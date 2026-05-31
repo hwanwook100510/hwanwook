@@ -1,10 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
-import { isAdminEmail } from '../utils/permissions'
 
 function AuthButton() {
-  const { user, loading, error, loginWithGoogle, logout } = useAuth()
+  const { user, isAdmin, loading, error, loginWithGoogle, logout } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLogin = async () => {
@@ -22,8 +21,6 @@ function AuthButton() {
   }
 
   if (user) {
-    const isAdmin = isAdminEmail(user.email)
-
     return (
       <div className="auth-profile">
         <Link className="auth-avatar-link" to={isAdmin ? '/admin' : '/mypage'} aria-label="내 정보 보기">
