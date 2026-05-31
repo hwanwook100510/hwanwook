@@ -4,12 +4,12 @@ import { Link } from 'react-router-dom'
 
 const featuredScheduleDate = new Date(2026, 5, 15)
 const policies = [
-  { title: '프로젝트실 신청 절차 단순화', description: '예약과 승인 절차를 줄여 필요한 공간을 빠르게 이용할 수 있게 합니다.', icon: 'folder' },
-  { title: '투명한 학생회', description: '회의 내용과 예산 사용 내역을 더 명확하게 공유합니다.', icon: 'users' },
-  { title: '학생 정책 제안제', description: '학생이 직접 제안한 정책을 검토하고 실행까지 연결합니다.', icon: 'pen' },
-  { title: 'e-스포츠 대회 개최', description: '모두가 즐길 수 있는 교내 e-스포츠 행사를 운영합니다.', icon: 'gamepad' },
-  { title: '대회 연계 프로그램', description: '교내외 대회 참여를 지원하는 연계 프로그램을 마련합니다.', icon: 'trophy' },
-  { title: '사복귀가 시행', description: '학생 편의를 고려한 사복귀가 운영 방안을 추진합니다.', icon: 'shirt' },
+  { title: '프로젝트실 신청 절차 단순화', description: '예약과 승인 절차를 줄여 필요한 공간을 빠르게 이용할 수 있게 합니다.', icon: 'folder', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=project-room' },
+  { title: '투명한 학생회', description: '회의 내용과 예산 사용 내역을 더 명확하게 공유합니다.', icon: 'users', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=transparent-council' },
+  { title: '학생 정책 제안제', description: '학생이 직접 제안한 정책을 검토하고 실행까지 연결합니다.', icon: 'pen', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=policy-proposal' },
+  { title: 'e-스포츠 대회 개최', description: '모두가 즐길 수 있는 교내 e-스포츠 행사를 운영합니다.', icon: 'gamepad', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=esports' },
+  { title: '대회 연계 프로그램', description: '교내외 대회 참여를 지원하는 연계 프로그램을 마련합니다.', icon: 'trophy', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=competition-program' },
+  { title: '사복귀가 시행', description: '학생 편의를 고려한 사복귀가 운영 방안을 추진합니다.', icon: 'shirt', url: 'https://hwanwook-election-pledge.vercel.app/pledge.html?id=casual-leave' },
 ]
 
 function getDdayLabel(date: Date) {
@@ -149,7 +149,7 @@ function Home() {
                 <span className="policy-icon"><Icon name={policy.icon} /></span>
                 <h3>{policy.title}</h3>
                 <p>{policy.description}</p>
-                <b>자세히 보기</b>
+                <a href={policy.url} target="_blank" rel="noreferrer">자세히 보기</a>
               </article>
             ))}
           </div>

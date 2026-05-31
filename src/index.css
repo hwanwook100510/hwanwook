@@ -340,7 +340,7 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
 .home-card-head a::after, .home-section-head a::after { content: '>'; margin-left: 8px; }
 .home-outline-button, .home-solid-button { display: inline-flex; align-items: center; justify-content: center; min-height: 42px; border-radius: 8px; padding: 0 24px; font-weight: 900; }
 .home-outline-button { border: 1px solid #ff4b91; color: #f72e7d; background: white; }
-.home-outline-button::after, .home-solid-button::after, .policy-card b::after, .home-promise-card a::after { content: '>'; margin-left: 10px; }
+.home-outline-button::after, .home-solid-button::after, .policy-card a::after, .home-promise-card a::after { content: '>'; margin-left: 10px; }
 .home-outline-button.wide { width: 100%; margin-top: 16px; }
 .home-solid-button { width: 100%; color: white; background: linear-gradient(135deg, #f72e7d, #f0166e); box-shadow: 0 12px 22px rgba(247, 46, 125, 0.2); }
 
@@ -393,7 +393,7 @@ body:has(.home-page) { background: #fff; }
 .policy-icon { display: grid; place-items: center; width: 72px; height: 72px; margin: 34px 0 20px; border-radius: 999px; color: var(--blue); background: var(--accent-soft); }
 .policy-card h3 { margin: 0 0 12px; color: #17171c; font-size: 1rem; }
 .policy-card p { min-height: 48px; margin: 0 0 24px; color: #4b4f58; font-size: 0.9rem; line-height: 1.55; }
-.policy-card b { width: 100%; margin-top: auto; border: 1px solid #ff6aa7; border-radius: 7px; padding: 11px 16px; color: #f72e7d; font-size: 0.9rem; }
+.policy-card a { width: 100%; margin-top: auto; border: 1px solid #ff6aa7; border-radius: 7px; padding: 11px 16px; color: #f72e7d; font-size: 0.9rem; font-weight: 900; }
 
 .home-lower-grid { display: grid; grid-template-columns: 1fr 0.95fr; gap: 28px; margin-top: 44px; }
 .home-lower-grid:has(> article:only-child) { grid-template-columns: 1fr; }
@@ -431,7 +431,7 @@ body:has(.home-page) { background: #fff; }
 
 /* Unified color system */
 .topbar { border-bottom-color: var(--line); background: rgba(255, 255, 255, 0.96); box-shadow: 0 8px 24px rgba(31, 41, 55, 0.055); }
-.brand strong, .nav a.active, .home-card-head a, .home-section-head a, .design-title a, .home-outline-button, .policy-card b, .wide-link, .table-card button, .table-card a, .vote-item button, .pledge-row button, .club-apply-card button { color: var(--blue); }
+.brand strong, .nav a.active, .home-card-head a, .home-section-head a, .design-title a, .home-outline-button, .policy-card a, .wide-link, .table-card button, .table-card a, .vote-item button, .pledge-row button, .club-apply-card button { color: var(--blue); }
 .nav a { color: var(--ink); }
 .nav a:hover { color: var(--blue); background: var(--accent-soft); }
 .nav a.active::after { background: var(--blue); }
@@ -439,8 +439,8 @@ body:has(.home-page) { background: #fff; }
 .menu-button:hover, .secondary-button:hover, .google-button:hover, .auth-profile button:hover, .profile-link:hover, .filter-row button:hover { border-color: var(--accent-line); color: var(--blue); background: var(--accent-soft); }
 .primary-button, .home-solid-button, .design-primary { border-color: var(--blue); color: #fff; background: linear-gradient(135deg, var(--blue), #c91668); box-shadow: 0 12px 24px rgba(217, 28, 118, 0.18); }
 .primary-button:hover, .home-solid-button:hover, .design-primary:hover { background: linear-gradient(135deg, #c91668, #b7135f); box-shadow: 0 16px 30px rgba(217, 28, 118, 0.22); }
-.home-outline-button, .policy-card b, .table-card button, .table-card a, .vote-item button, .pledge-row button, .club-apply-card button { border-color: var(--accent-line); background: #fff; }
-.home-outline-button:hover, .policy-card:hover b, .table-card button:hover, .table-card a:hover, .vote-item button:hover, .pledge-row button:hover, .club-apply-card button:hover { background: var(--accent-soft); border-color: var(--blue); }
+.home-outline-button, .policy-card a, .table-card button, .table-card a, .vote-item button, .pledge-row button, .club-apply-card button { border-color: var(--accent-line); background: #fff; }
+.home-outline-button:hover, .policy-card:hover a, .table-card button:hover, .table-card a:hover, .vote-item button:hover, .pledge-row button:hover, .club-apply-card button:hover { background: var(--accent-soft); border-color: var(--blue); }
 .hero-copy, .hero-panel, .panel-card, .form-card, .summary-card, .link-card, .member-card, .suggestion-card, .info-grid article, .notice-item, .club-photo-card, .auth-card, .home-card, .design-card, .stat-grid article, .policy-card { border-color: var(--line); background: rgba(255, 255, 255, 0.98); box-shadow: var(--shadow-subtle); }
 .hero-copy, .muted-section, .home-promise-card, .eval-form, .priority-card, .submit-card { background: linear-gradient(135deg, #ffffff, var(--surface)); }
 .summary-card:nth-child(2), .link-card:nth-child(2) { border-color: var(--official-blue-strong); background: #fbfdff; }
