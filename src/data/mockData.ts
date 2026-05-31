@@ -1,8 +1,8 @@
 import type { EvaluationResult, Member, Notice, PolicySuggestion, ProgressItem, Schedule } from '../types'
 
 export const members: Member[] = [
-  { id: 1, name: '박동우', role: '학생회장', department: '회장단', intro: '학생이 체감하는 변화를 만드는 대표가 되겠습니다.' },
-  { id: 2, name: '정환욱', role: '부회장', department: '회장단', intro: '학생들의 의견을 빠르게 듣고 실행으로 연결하겠습니다.' },
+  { id: 1, name: '박동우', role: '회장 후보', department: '회장단', intro: '학생이 체감하는 변화를 만드는 대표가 되겠습니다.' },
+  { id: 2, name: '정환욱', role: '부회장 후보', department: '회장단', intro: '학생들의 의견을 빠르게 듣고 실행으로 연결하겠습니다.' },
   { id: 3, name: '문태웅', role: '부장', department: '급식안전부', intro: '급식 만족도와 학교생활 안전 관련 의견을 수렴합니다.' },
   { id: 4, name: '이로아', role: '차장', department: '급식안전부', intro: '급식안전부 운영을 지원하고 학생 의견을 정리합니다.' },
   { id: 5, name: '김재준', role: '부장', department: '문예창작부', intro: '문예 활동과 창작 중심의 학생 참여 프로그램을 기획합니다.' },

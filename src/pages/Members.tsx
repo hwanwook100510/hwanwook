@@ -9,8 +9,8 @@ const values = [
   { icon: 'check', title: '학생회가 하는 일', text: '의견 수렴, 정책 제안, 행사 기획, 학생 복지와 권익 증진' },
 ]
 const officers = [
-  { role: '회장', name: '박동우', image: '/president.jpg' },
-  { role: '부회장', name: '정환욱', image: '/vice-president.jpg' },
+  { role: '회장 후보', name: '박동우', image: '/president.jpg' },
+  { role: '부회장 후보', name: '정환욱', image: '/vice-president.jpg' },
 ]
 
 function Icon({ name }: { name: string }) {
@@ -63,7 +63,7 @@ function Members() {
           {departments.map((department) => (
             <article className="design-card department-empty-card" key={department}>
               <h3>{department}</h3>
-              {(department === '회장단' ? ['회장', '부회장'] : ['부장', '차장']).map((role) => (
+              {(department === '회장단' ? ['회장 후보', '부회장 후보'] : ['부장', '차장']).map((role) => (
                 <div className="department-role-card" key={role}>
                   <div className="empty-photo">공석</div>
                   <span>{role}</span>
