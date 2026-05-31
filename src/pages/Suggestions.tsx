@@ -4,7 +4,6 @@ import { collection, doc, getDocs, setDoc } from 'firebase/firestore'
 import { useAuth } from '../contexts/useAuth'
 import { initialSuggestions } from '../data/mockData'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 import type { PolicySuggestion, PolicySuggestionAuthor } from '../types'
 import { isAdminEmail } from '../utils/permissions'
@@ -18,8 +17,7 @@ function Icon({ name }: { name: string }) { return <svg className="home-icon" ar
 function Suggestions() {
   const { user } = useAuth()
   const { profile } = useStudentProfile()
-  const [suggestions, setSuggestions] = useLocalStorage<PolicySuggestion[]>('dimigo-policy-suggestions', initialSuggestions)
-  const [visibleSuggestions, setVisibleSuggestions] = useState<PolicySuggestion[]>(suggestions)
+  const [visibleSuggestions, setVisibleSuggestions] = useState<PolicySuggestion[]>(initialSuggestions)
   const [suggestionAuthors, setSuggestionAuthors] = useState<PolicySuggestionAuthor[]>([])
   const [form, setForm] = useState(emptySuggestion)
   const [message, setMessage] = useState('')
@@ -27,7 +25,6 @@ function Suggestions() {
 
   useEffect(() => {
     if (!db) {
-      setVisibleSuggestions(suggestions)
       return
     }
 
@@ -41,7 +38,7 @@ function Suggestions() {
     }
 
     void loadSuggestions()
-  }, [suggestions])
+  }, [isAdmin])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -49,7 +46,6 @@ function Suggestions() {
     if (!user?.email || !profile) { setMessage('회원가입 정보를 확인할 수 없습니다.'); return }
     const suggestion = { id: Date.now(), title: form.title.trim(), category: form.category, content: form.content.trim(), effect: form.effect.trim(), createdAt: new Date().toISOString().slice(0, 10), isAnonymous: form.anonymous }
     const author = { suggestionId: suggestion.id, authorEmail: user.email, authorName: profile.name }
-    setSuggestions([suggestion, ...suggestions])
     setVisibleSuggestions([suggestion, ...visibleSuggestions])
     if (db) {
       void setDoc(doc(db, 'policySuggestions', String(suggestion.id)), suggestion)

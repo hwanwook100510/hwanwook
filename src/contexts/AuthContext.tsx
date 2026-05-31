@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
-import type { StudentProfile } from '../types'
 import { ADMIN_EMAILS, normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
@@ -17,31 +16,6 @@ const CONFIG_ERROR = 'Firebase 설정이 아직 완료되지 않았습니다. .e
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
   return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN) || ALLOWED_EMAILS.includes(normalizedEmail ?? ''))
-}
-
-async function syncLocalProfileToFirestore(currentUser: User) {
-  if (!db || !currentUser.email) {
-    return
-  }
-
-  const storedProfiles = localStorage.getItem('dimigo-student-profiles')
-
-  if (!storedProfiles) {
-    return
-  }
-
-  try {
-    const profiles = JSON.parse(storedProfiles) as StudentProfile[]
-    const profile = profiles.find((item) => normalizeEmail(item.email) === normalizeEmail(currentUser.email))
-
-    if (!profile) {
-      return
-    }
-
-    await setDoc(doc(db, 'studentProfiles', currentUser.email), profile, { merge: true })
-  } catch (syncError) {
-    console.error('Firestore 회원정보 동기화에 실패했습니다.', syncError)
-  }
 }
 
 async function isSuspendedEmail(email: string | null) {
@@ -83,32 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (currentUser) {
-        void syncLocalProfileToFirestore(currentUser)
-      }
       setUser(currentUser)
       setLoading(false)
     })
 
     return unsubscribe
   }, [])
-
-  useEffect(() => {
-    if (!user) {
-      return
-    }
-
-    const syncProfile = () => {
-      void syncLocalProfileToFirestore(user)
-    }
-
-    syncProfile()
-    window.addEventListener('focus', syncProfile)
-
-    return () => {
-      window.removeEventListener('focus', syncProfile)
-    }
-  }, [user])
 
   const loginWithGoogle = async () => {
     if (!auth || !googleProvider) {
@@ -134,7 +88,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setUser(result.user)
-    void syncLocalProfileToFirestore(result.user)
   }
 
   const logout = async () => {

@@ -22,9 +22,3 @@ export const googleProvider = app ? new GoogleAuthProvider() : null
 googleProvider?.setCustomParameters({
   prompt: 'select_account',
 })
-console.log(firebaseConfig)
-console.log(isFirebaseConfigured)
-console.log('firebaseConfig:', firebaseConfig)
-console.log('isFirebaseConfigured:', isFirebaseConfigured)
-console.log('db:', db)
-console.log('auth:', auth)

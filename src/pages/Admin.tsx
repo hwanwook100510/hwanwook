@@ -4,25 +4,13 @@ import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, StudentProfile } from '../types'
 import { isAdminEmail } from '../utils/permissions'
 
-function mergeProfiles(remoteProfiles: StudentProfile[], localProfiles: StudentProfile[]) {
-  const profileMap = new Map<string, StudentProfile>()
-
-  localProfiles.forEach((profile) => profileMap.set(profile.email, profile))
-  remoteProfiles.forEach((profile) => profileMap.set(profile.email, profile))
-
-  return Array.from(profileMap.values())
-}
-
 function Admin() {
   const { user } = useAuth()
-  const [profiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
-  const [assignments, setAssignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
-  const [visibleProfiles, setVisibleProfiles] = useState<StudentProfile[]>(profiles)
-  const [visibleAssignments, setVisibleAssignments] = useState<ClubRoleAssignment[]>(assignments)
+  const [visibleProfiles, setVisibleProfiles] = useState<StudentProfile[]>([])
+  const [visibleAssignments, setVisibleAssignments] = useState<ClubRoleAssignment[]>([])
   const [applications, setApplications] = useState<ClubApplication[]>([])
   const [suspensions, setSuspensions] = useState<AccountSuspension[]>([])
   const [message, setMessage] = useState('')
@@ -45,18 +33,17 @@ function Admin() {
         const remoteApplications = applicationSnapshot.docs.map((item) => item.data() as ClubApplication)
         const remoteSuspensions = suspensionSnapshot.docs.map((item) => item.data() as AccountSuspension)
 
-        setVisibleProfiles(mergeProfiles(remoteProfiles, profiles))
+        setVisibleProfiles(remoteProfiles)
         setVisibleAssignments(remoteAssignments)
         setApplications(remoteApplications)
         setSuspensions(remoteSuspensions)
-        setAssignments(remoteAssignments)
       } catch {
         setMessage('Firestore 데이터를 불러오지 못했습니다. Firebase Console에서 Firestore Database를 활성화했는지 확인해주세요.')
       }
     }
 
     void loadAdminData()
-  }, [profiles, setAssignments, user?.email])
+  }, [user?.email])
 
   if (!isAdminEmail(user?.email)) {
     return (
@@ -87,7 +74,6 @@ function Admin() {
 
     const nextAssignments = [nextAssignment, ...visibleAssignments.filter((assignment) => assignment.email !== email)]
     setVisibleAssignments(nextAssignments)
-    setAssignments(nextAssignments)
 
     if (db) {
       await setDoc(doc(db, 'clubRoleAssignments', email), nextAssignment, { merge: true })

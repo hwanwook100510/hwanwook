@@ -5,7 +5,6 @@ import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import type { ClubApplication, ClubIntro, ClubRoleAssignment } from '../types'
 
 function getPriority(application: ClubApplication, club: string) {
@@ -18,12 +17,9 @@ function getPriority(application: ClubApplication, club: string) {
 function ClubDashboard() {
   const { user } = useAuth()
   const userEmail = user?.email
-  const [assignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
-  const [applications] = useLocalStorage<ClubApplication[]>('dimigo-club-applications', [])
-  const [intros, setIntros] = useLocalStorage<ClubIntro[]>('dimigo-club-intros', [])
-  const [remoteAssignments, setRemoteAssignments] = useState<ClubRoleAssignment[]>(db ? [] : assignments)
-  const [remoteApplications, setRemoteApplications] = useState<ClubApplication[]>(db ? [] : applications)
-  const [remoteIntros, setRemoteIntros] = useState<ClubIntro[]>(db ? [] : intros)
+  const [remoteAssignments, setRemoteAssignments] = useState<ClubRoleAssignment[]>([])
+  const [remoteApplications, setRemoteApplications] = useState<ClubApplication[]>([])
+  const [remoteIntros, setRemoteIntros] = useState<ClubIntro[]>([])
   const assignment = remoteAssignments.find((item) => item.email === userEmail)
   const club = clubs.find((item) => item.name === assignment?.club)
   const savedIntro = remoteIntros.find((intro) => intro.club === assignment?.club)
@@ -109,7 +105,6 @@ function ClubDashboard() {
 
     const nextIntros = [nextIntro, ...remoteIntros.filter((item) => item.club !== club.name)]
     setRemoteIntros(nextIntros)
-    setIntros(nextIntros)
 
     if (db) {
       await setDoc(doc(db, 'clubIntros', club.name), nextIntro, { merge: true })

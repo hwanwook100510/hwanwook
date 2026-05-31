@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { initialEvaluation } from '../data/mockData'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 import type { EvaluationResponse, EvaluationResult } from '../types'
 import { isAdminEmail } from '../utils/permissions'
@@ -18,8 +17,7 @@ function Stars({ score }: { score: number }) {
 function Evaluation() {
   const { user } = useAuth()
   const { profile } = useStudentProfile()
-  const [result, setResult] = useLocalStorage<EvaluationResult>('dimigo-evaluation', initialEvaluation)
-  const [summaryResult, setSummaryResult] = useState<EvaluationResult>(result)
+  const [summaryResult, setSummaryResult] = useState<EvaluationResult>(initialEvaluation)
   const [responses, setResponses] = useState<EvaluationResponse[]>([])
   const [vote, setVote] = useState({ promise: 100, communication: 100, event: 100, reflection: 100 })
   const [message, setMessage] = useState('')
@@ -52,13 +50,11 @@ function Evaluation() {
     event.preventDefault()
     if (!user?.email || !profile) { setMessage('회원가입 정보를 확인할 수 없습니다.'); return }
     const response: EvaluationResponse = { email: user.email, name: profile.name, createdAt: new Date().toISOString().slice(0, 10), ...vote }
-    setResult({ promise: Math.round((result.promise + vote.promise) / 2), communication: Math.round((result.communication + vote.communication) / 2), event: Math.round((result.event + vote.event) / 2), reflection: Math.round((result.reflection + vote.reflection) / 2) })
     const nextSummary = { promise: Math.round((summaryResult.promise + vote.promise) / 2), communication: Math.round((summaryResult.communication + vote.communication) / 2), event: Math.round((summaryResult.event + vote.event) / 2), reflection: Math.round((summaryResult.reflection + vote.reflection) / 2) }
     setSummaryResult(nextSummary)
     setResponses([response, ...responses.filter((item) => item.email !== user.email)])
     if (db) {
       void setDoc(doc(db, 'evaluationResponses', user.email), response, { merge: true })
-      void setDoc(doc(db, 'publicStats', 'evaluationSummary'), nextSummary, { merge: true })
     }
     setMessage('평가가 반영되었습니다.')
   }

@@ -1,7 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { clubs } from '../data/clubs'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useClientState } from '../hooks/useClientState'
 
 const priorityLabels = {
   first: '1순위',
@@ -18,9 +18,9 @@ function isPriority(value: string | undefined): value is Priority {
 function ClubSelect() {
   const { priority } = useParams()
   const navigate = useNavigate()
-  const [, setFirstChoice] = useLocalStorage('dimigo-pending-first-choice', '')
-  const [, setSecondChoice] = useLocalStorage('dimigo-pending-second-choice', '')
-  const [, setThirdChoice] = useLocalStorage('dimigo-pending-third-choice', '')
+  const [, setFirstChoice] = useClientState('')
+  const [, setSecondChoice] = useClientState('')
+  const [, setThirdChoice] = useClientState('')
   const currentPriority = isPriority(priority) ? priority : 'first'
   const label = priorityLabels[currentPriority]
 

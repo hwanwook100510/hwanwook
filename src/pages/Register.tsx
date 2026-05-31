@@ -6,7 +6,6 @@ import AuthButton from '../components/AuthButton'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 import type { StudentProfile } from '../types'
 import { isAdminEmail } from '../utils/permissions'
@@ -22,7 +21,6 @@ function Register() {
   const { user, loading } = useAuth()
   const location = useLocation()
   const { profile, loading: profileLoading } = useStudentProfile()
-  const [profiles, setProfiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const state = location.state as { from?: { pathname?: string } } | null
@@ -45,15 +43,13 @@ function Register() {
       createdAt: new Date().toISOString().slice(0, 10),
     }
 
-    setProfiles([profile, ...profiles.filter((item) => item.email !== user.email)])
-
     if (db) {
       await setDoc(doc(db, 'studentProfiles', user.email), profile, { merge: true })
       setMessage('회원가입 정보가 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
       return
     }
 
-    setMessage('회원가입 정보가 이 브라우저에 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
+    setMessage('Firestore 연결을 확인할 수 없어 회원가입 정보를 저장하지 못했습니다.')
   }
 
   if (isAdminEmail(user?.email)) {

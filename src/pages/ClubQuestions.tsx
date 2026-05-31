@@ -3,7 +3,7 @@ import type { FormEvent } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useClientState } from '../hooks/useClientState'
 
 const commonQuestions = [
   '이 동아리에 지원한 이유를 구체적으로 작성해주세요.',
@@ -22,7 +22,7 @@ type ClubQuestionAnswer = {
 function ClubQuestions() {
   const { clubName = '' } = useParams()
   const { user } = useAuth()
-  const [answers, setAnswers] = useLocalStorage<ClubQuestionAnswer[]>('dimigo-club-question-answers', [])
+  const [answers, setAnswers] = useClientState<ClubQuestionAnswer[]>([])
   const savedAnswer = answers.find((answer) => answer.email === user?.email && answer.club === clubName)
   const [form, setForm] = useState(savedAnswer?.answers ?? ['', '', ''])
   const [message, setMessage] = useState('')

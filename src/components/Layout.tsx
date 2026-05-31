@@ -3,9 +3,7 @@ import { doc, getDoc } from 'firebase/firestore'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
 import { useStudentProfile } from '../hooks/useStudentProfile'
-import type { ClubRoleAssignment } from '../types'
 import { isAdminEmail } from '../utils/permissions'
 import AuthButton from './AuthButton'
 
@@ -28,50 +26,34 @@ function Layout({ children }: LayoutProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { user } = useAuth()
   const { profile } = useStudentProfile()
-  const [assignments] = useLocalStorage<ClubRoleAssignment[]>('dimigo-club-role-assignments', [])
   const [remoteClubPermission, setRemoteClubPermission] = useState<{ email: string, hasPermission: boolean } | null>(null)
   const isAdmin = isAdminEmail(user?.email)
   const userEmail = user?.email
-  const hasLocalClubPermission = Boolean(userEmail && assignments.some((item) => item.email === userEmail))
   const hasRemoteClubPermission = Boolean(userEmail && remoteClubPermission?.email === userEmail && remoteClubPermission.hasPermission)
-  const hasClubPermission = hasLocalClubPermission || hasRemoteClubPermission
+  const hasClubPermission = hasRemoteClubPermission
 
   useEffect(() => {
-  if (!db || typeof userEmail !== 'string') {
-    console.log('db 또는 userEmail 없음')
-    console.log('db:', db)
-    console.log('userEmail:', userEmail)
-    setRemoteClubPermission(null)
-    return
-  }
-
-  async function loadPermission() {
-    if (!db || typeof userEmail !== 'string') return
-
-    try {
-      console.log('===== Firestore 읽기 시작 =====')
-      console.log('userEmail:', userEmail)
-
-      const docRef = doc(db, 'clubRoleAssignments', userEmail)
-      const snapshot = await getDoc(docRef)
-
-      console.log('===== Firestore 읽기 성공 =====')
-      console.log('exists:', snapshot.exists())
-      console.log('data:', snapshot.data())
-
-      setRemoteClubPermission({
-        email: userEmail,
-        hasPermission: snapshot.exists(),
-      })
-    } catch (error) {
-      console.error('===== Firestore 읽기 실패 =====')
-      console.error(error)
-      setRemoteClubPermission(null)
+    if (!db || typeof userEmail !== 'string') {
+      return
     }
-  }
 
-  void loadPermission()
-}, [userEmail])
+    async function loadPermission() {
+      if (!db || typeof userEmail !== 'string') return
+
+      try {
+        const snapshot = await getDoc(doc(db, 'clubRoleAssignments', userEmail))
+
+        setRemoteClubPermission({
+          email: userEmail,
+          hasPermission: snapshot.exists(),
+        })
+      } catch {
+        setRemoteClubPermission(null)
+      }
+    }
+
+    void loadPermission()
+  }, [userEmail])
 
   const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
   const extraNavigation = [

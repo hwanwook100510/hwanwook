@@ -5,8 +5,9 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
-import { useLocalStorage } from '../hooks/useLocalStorage'
-import type { ClubApplication, StudentProfile } from '../types'
+import { useClientState } from '../hooks/useClientState'
+import { useStudentProfile } from '../hooks/useStudentProfile'
+import type { ClubApplication } from '../types'
 
 const emptyForm = { firstChoice: '', secondChoice: '', thirdChoice: '' }
 const featuredClubs = clubs.slice(0, 6)
@@ -17,16 +18,14 @@ function Icon({ name }: { name: string }) { return <svg className="home-icon" ar
 
 function ClubSupport() {
   const { user } = useAuth()
-  const [profiles] = useLocalStorage<StudentProfile[]>('dimigo-student-profiles', [])
-  const [pendingFirstChoice, setPendingFirstChoice] = useLocalStorage('dimigo-pending-first-choice', '')
-  const [pendingSecondChoice, setPendingSecondChoice] = useLocalStorage('dimigo-pending-second-choice', '')
-  const [pendingThirdChoice, setPendingThirdChoice] = useLocalStorage('dimigo-pending-third-choice', '')
-  const [applications, setApplications] = useLocalStorage<ClubApplication[]>('dimigo-club-applications', [])
+  const { profile } = useStudentProfile()
+  const [pendingFirstChoice, setPendingFirstChoice] = useClientState('')
+  const [pendingSecondChoice, setPendingSecondChoice] = useClientState('')
+  const [pendingThirdChoice, setPendingThirdChoice] = useClientState('')
   const [savedApplication, setSavedApplication] = useState<ClubApplication | null>(null)
   const [form, setForm] = useState({ ...emptyForm, firstChoice: pendingFirstChoice, secondChoice: pendingSecondChoice, thirdChoice: pendingThirdChoice })
   const [message, setMessage] = useState('')
   const [activityFilter, setActivityFilter] = useState('전체 분야')
-  const profile = profiles.find((item) => item.email === user?.email)
   const selected = [form.firstChoice, form.secondChoice, form.thirdChoice].filter(Boolean)
   const visibleClubs = activityFilter === '전체 분야' ? featuredClubs : featuredClubs.filter((club) => club.activity === activityFilter)
   const isPastDeadline = Boolean(applicationDeadline && new Date() > new Date(applicationDeadline))
@@ -35,13 +34,12 @@ function ClubSupport() {
   useEffect(() => {
     if (!user?.email) return
 
-    const localApplication = applications.find((application) => application.email === user.email) ?? null
-    setSavedApplication(localApplication)
-
     if (!db) return
 
+    const currentEmail = user.email
+
     async function loadApplication() {
-      const snapshot = await getDoc(doc(db!, 'clubApplications', user!.email!))
+      const snapshot = await getDoc(doc(db!, 'clubApplications', currentEmail))
       const application = snapshot.exists() ? snapshot.data() as ClubApplication : null
       setSavedApplication(application)
 
@@ -51,7 +49,7 @@ function ClubSupport() {
     }
 
     void loadApplication()
-  }, [applications, user?.email])
+  }, [user?.email])
 
   const setChoice = (club: string) => {
     if (isLocked) { setMessage('이미 제출한 지원서는 수정할 수 없습니다.'); return }
@@ -74,7 +72,6 @@ function ClubSupport() {
     if (isLocked) { setMessage('이미 제출한 지원서는 수정할 수 없습니다. 수정이 필요하면 관리자에게 요청해주세요.'); return }
     if ([form.firstChoice, form.secondChoice, form.thirdChoice].some((club) => !club)) { setMessage('1순위, 2순위, 3순위 동아리를 모두 선택해주세요.'); return }
     const application = { id: savedApplication?.id ?? Date.now(), email: user.email, name: profile.name, grade: profile.grade, classNumber: profile.classNumber, number: profile.number, ...form, createdAt: savedApplication?.createdAt ?? new Date().toISOString().slice(0, 10), locked: true, unlockedByAdmin: false }
-    setApplications([application, ...applications.filter((item) => item.email !== user.email)])
     setSavedApplication(application)
     if (db) await setDoc(doc(db, 'clubApplications', user.email), application)
     setMessage('동아리 지원서가 저장되었습니다.')

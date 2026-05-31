@@ -50,32 +50,6 @@ function App() {
     }
   }, [])
 
-  useEffect(() => {
-    const blockShortcuts = (event: KeyboardEvent) => {
-      const key = event.key.toLowerCase()
-      const blocked = event.key === 'F12'
-        || (event.ctrlKey && event.shiftKey && ['i', 'j', 'c'].includes(key))
-        || (event.ctrlKey && ['s', 'u'].includes(key))
-
-      if (blocked) {
-        event.preventDefault()
-        event.stopPropagation()
-      }
-    }
-
-    const blockContextMenu = (event: MouseEvent) => {
-      event.preventDefault()
-    }
-
-    window.addEventListener('keydown', blockShortcuts)
-    window.addEventListener('contextmenu', blockContextMenu)
-
-    return () => {
-      window.removeEventListener('keydown', blockShortcuts)
-      window.removeEventListener('contextmenu', blockContextMenu)
-    }
-  }, [])
-
   return (
     <Layout>
       <Suspense fallback={<div className="auth-card route-loading"><p>페이지를 불러오고 있습니다.</p></div>}>

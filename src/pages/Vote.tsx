@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useLocalStorage } from '../hooks/useLocalStorage'
+import { useClientState } from '../hooks/useClientState'
 
 const candidates = [
   { name: '신의진', slogan: '존중과 책임으로 만드는 바른생활부!' },
@@ -15,9 +15,9 @@ const totalParticipants = 0
 function Icon({ name }: { name: string }) { return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg> }
 
 function Vote() {
-  const [votes, setVotes] = useLocalStorage<Record<string, string>>('dimigo-votes', {})
-  const [candidate, setCandidate] = useLocalStorage('dimigo-election-vote', '')
-  const [viewingCandidate, setViewingCandidate] = useLocalStorage('dimigo-viewing-candidate', '')
+  const [votes, setVotes] = useClientState<Record<string, string>>({})
+  const [candidate, setCandidate] = useClientState('')
+  const [viewingCandidate, setViewingCandidate] = useClientState('')
 
   const savePolicyVote = (title: string, value: '찬성' | '반대') => {
     setVotes({ ...votes, [title]: value })
