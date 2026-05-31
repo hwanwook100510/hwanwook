@@ -25,12 +25,10 @@ export type ProgressItem = {
 export type PolicySuggestion = {
   id: string
   title: string
-  category: string
   content: string
   effect: string
   createdAt: FirestoreTime
-  authorEmail?: string
-  authorName?: string
+  category: string
   isAnonymous?: boolean
 }
 
@@ -99,6 +97,16 @@ export type VoteRecord = {
   target: string
   choice: string
   createdAt: FirestoreTime
+}
+
+export type ElectionResult = {
+  id: string
+  isClosed: boolean
+  closedAt?: FirestoreTime
+  totalVotes: number
+  counts: Record<string, number>
+  percentages: Record<string, number>
+  winners: string[]
 }
 
 export type PledgeProgress = {

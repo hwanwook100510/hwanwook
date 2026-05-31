@@ -30,6 +30,10 @@ service cloud.firestore {
       return isDimigoAccount() || isAdmin();
     }
 
+    function isStudent() {
+      return isDimigoAccount() && !isAdmin();
+    }
+
     function isSelfEmail(targetEmail) {
       return signedIn() && email() == targetEmail;
     }
@@ -198,45 +202,43 @@ service cloud.firestore {
         && data.email is string
         && data.name is string
         && data.createdAt is timestamp
-        && data.promise is number
-        && data.communication is number
-        && data.event is number
-        && data.reflection is number
+        && data.promise is int
+        && data.communication is int
+        && data.event is int
+        && data.reflection is int
         && data.email == targetEmail
         && data.name.size() > 0
         && data.name.size() <= 20
-        && data.promise >= 0
-        && data.promise <= 100
-        && data.communication >= 0
-        && data.communication <= 100
-        && data.event >= 0
-        && data.event <= 100
-        && data.reflection >= 0
-        && data.reflection <= 100;
+        && data.promise >= 1
+        && data.promise <= 5
+        && data.communication >= 1
+        && data.communication <= 5
+        && data.event >= 1
+        && data.event <= 5
+        && data.reflection >= 1
+        && data.reflection <= 5;
     }
 
     function validEvaluationCreate(data, targetEmail) {
       return validEvaluation(data, targetEmail) && isRequestTime(data.createdAt);
     }
 
-    function validEvaluationUpdate(data, targetEmail) {
-      return validEvaluation(data, targetEmail) && isRequestTime(data.createdAt);
-    }
-
     function validSummary(data) {
-      return data.keys().hasOnly(['promise', 'communication', 'event', 'reflection'])
+      return data.keys().hasOnly(['promise', 'communication', 'event', 'reflection', 'count'])
         && data.promise is number
         && data.communication is number
         && data.event is number
         && data.reflection is number
+        && data.count is int
         && data.promise >= 0
-        && data.promise <= 100
+        && data.promise <= 5
         && data.communication >= 0
-        && data.communication <= 100
+        && data.communication <= 5
         && data.event >= 0
-        && data.event <= 100
+        && data.event <= 5
         && data.reflection >= 0
-        && data.reflection <= 100;
+        && data.reflection <= 5
+        && data.count >= 0;
     }
 
     function validVoteRecord(data, voteId) {
@@ -249,12 +251,32 @@ service cloud.firestore {
         && data.choice is string
         && data.createdAt is timestamp
         && data.email.size() > 0
+        && data.email == email()
         && data.name.size() > 0
         && data.name.size() <= 20
         && data.target.size() > 0
         && data.target.size() <= 80
         && data.choice.size() > 0
-        && data.choice.size() <= 80;
+        && data.choice.size() <= 80
+        && data.id == email() + '_' + data.target;
+    }
+
+    function validElectionSetting(data) {
+      return data.keys().hasOnly(['isClosed', 'closedAt'])
+        && data.isClosed is bool
+        && (!('closedAt' in data) || data.closedAt is timestamp);
+    }
+
+    function validElectionResult(data) {
+      return data.keys().hasOnly(['id', 'isClosed', 'closedAt', 'totalVotes', 'counts', 'percentages', 'winners'])
+        && data.id == 'current'
+        && data.isClosed == true
+        && data.closedAt is timestamp
+        && data.totalVotes is int
+        && data.counts is map
+        && data.percentages is map
+        && data.winners is list
+        && data.totalVotes >= 0;
     }
 
     function validPledge(data, pledgeId) {
@@ -337,7 +359,7 @@ service cloud.firestore {
 
     match /policySuggestions/{suggestionId} {
       allow get, list: if true;
-      allow create: if isAdmin() && validSuggestionCreate(request.resource.data, suggestionId);
+      allow create: if isStudent() && validSuggestionCreate(request.resource.data, suggestionId);
       allow update: if isAdmin()
         && validSuggestion(request.resource.data, suggestionId)
         && request.resource.data.createdAt == resource.data.createdAt;
@@ -346,28 +368,42 @@ service cloud.firestore {
 
     match /policySuggestionAuthors/{suggestionId} {
       allow get, list: if isAdmin();
-      allow create: if isAdmin() && validSuggestionAuthor(request.resource.data, suggestionId);
+      allow create: if isStudent() && validSuggestionAuthor(request.resource.data, suggestionId);
       allow update, delete: if isAdmin();
     }
 
     match /evaluationResponses/{targetEmail} {
-      allow get: if isAdmin();
+      allow get: if isAdmin() || (isStudent() && isSelfEmail(targetEmail));
       allow list: if isAdmin();
-      allow create: if isAdmin()
+      allow create: if isStudent()
+        && isSelfEmail(targetEmail)
+        && !exists(/databases/$(database)/documents/evaluationResponses/$(targetEmail))
         && validEvaluationCreate(request.resource.data, targetEmail);
-      allow update: if isAdmin()
-        && validEvaluationUpdate(request.resource.data, targetEmail);
+      allow update: if false;
       allow delete: if false;
     }
 
     match /voteRecords/{voteId} {
-      allow get, list: if isAdmin();
-      allow create: if isAdmin()
+      allow get: if isAdmin()
+        || (isStudent() && (!exists(/databases/$(database)/documents/voteRecords/$(voteId)) || resource.data.email == email()));
+      allow list: if isAdmin();
+      allow create: if isStudent()
         && validVoteRecord(request.resource.data, voteId)
-        && isRequestTime(request.resource.data.createdAt);
-      allow update: if isAdmin()
-        && validVoteRecord(request.resource.data, voteId)
-        && request.resource.data.createdAt == resource.data.createdAt;
+        && isRequestTime(request.resource.data.createdAt)
+        && !exists(/databases/$(database)/documents/voteRecords/$(voteId))
+        && (!exists(/databases/$(database)/documents/electionSettings/current) || get(/databases/$(database)/documents/electionSettings/current).data.isClosed != true);
+      allow update, delete: if false;
+    }
+
+    match /electionSettings/{settingId} {
+      allow get, list: if true;
+      allow create, update: if isAdmin() && settingId == 'current' && validElectionSetting(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /electionResults/{resultId} {
+      allow get, list: if isAdmin() || (exists(/databases/$(database)/documents/electionSettings/current) && get(/databases/$(database)/documents/electionSettings/current).data.isClosed == true);
+      allow create, update: if isAdmin() && resultId == 'current' && validElectionResult(request.resource.data);
       allow delete: if isAdmin();
     }
 

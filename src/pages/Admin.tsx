@@ -4,7 +4,7 @@ import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
-import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, EvaluationResponse, FirestoreTime, PledgeProgress, PledgeStatus, PolicySuggestion, PolicySuggestionAuthor, StudentProfile, VoteRecord } from '../types'
+import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, ElectionResult, EvaluationResponse, FirestoreTime, PledgeProgress, PledgeStatus, PolicySuggestion, PolicySuggestionAuthor, StudentProfile, VoteRecord } from '../types'
 
 const pledgeStatuses: PledgeStatus[] = ['예정', '진행중', '완료', '보류']
 const emptyPledgeForm = { id: '', title: '', description: '', status: '예정' as PledgeStatus, progress: '0' }
@@ -14,6 +14,8 @@ const evaluationLabels = [
   { key: 'event', label: '행사' },
   { key: 'reflection', label: '복지' },
 ] as const
+const electionTarget = '바른생활부 차장 보궐선거'
+const electionCandidates = ['신의진', '문소연']
 
 function formatTime(value: FirestoreTime) {
   if (typeof value === 'string') return value
@@ -246,6 +248,58 @@ function Admin() {
     }
   }
 
+  const publishEvaluationSummary = async () => {
+    if (!db) { setMessage('DB에 연결할 수 없어 평가 집계를 공개할 수 없습니다.'); return }
+
+    const summary = averageEvaluation(evaluationResponses)
+
+    try {
+      await setDoc(doc(db, 'publicStats', 'evaluationSummary'), {
+        promise: summary.promise,
+        communication: summary.communication,
+        event: summary.event,
+        reflection: summary.reflection,
+        count: evaluationResponses.length,
+      })
+      setMessage('평가 평균을 공개 페이지에 반영했습니다.')
+    } catch {
+      setMessage('평가 평균 공개 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  const closeElection = async () => {
+    if (!db) { setMessage('DB에 연결할 수 없어 투표를 종료할 수 없습니다.'); return }
+
+    const counts = voteRecords.reduce<Record<string, number>>((acc, vote) => {
+      const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
+      acc[key] = (acc[key] ?? 0) + 1
+      return acc
+    }, {})
+    const totalVotes = voteRecords.length
+    const percentages = Object.fromEntries(Object.entries(counts).map(([key, count]) => [key, totalVotes === 0 ? 0 : (count / totalVotes) * 100]))
+    const maxCandidateVotes = Math.max(0, ...electionCandidates.map((candidate) => counts[candidate] ?? 0))
+    const winners = maxCandidateVotes === 0 ? [] : electionCandidates.filter((candidate) => (counts[candidate] ?? 0) === maxCandidateVotes)
+    const result: ElectionResult = {
+      id: 'current',
+      isClosed: true,
+      closedAt: serverTimestamp() as unknown as ElectionResult['closedAt'],
+      totalVotes,
+      counts,
+      percentages,
+      winners,
+    }
+
+    try {
+      await Promise.all([
+        setDoc(doc(db, 'electionSettings', 'current'), { isClosed: true, closedAt: serverTimestamp() }),
+        setDoc(doc(db, 'electionResults', 'current'), result),
+      ])
+      setMessage('투표를 종료하고 결과를 공개했습니다.')
+    } catch {
+      setMessage('투표 종료 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
   const editPledge = (pledge: PledgeProgress) => {
     setPledgeForm({ id: pledge.id, title: pledge.title, description: pledge.description, status: pledge.status, progress: String(pledge.progress) })
   }
@@ -316,10 +370,11 @@ function Admin() {
         <div className="admin-summary-card">
           <strong>종합 만족도</strong>
           <b>{evaluationAverage.total.toFixed(1)}점</b>
-          <span>100점 만점 · 응답 수 {evaluationResponses.length}명</span>
+          <span>5점 만점 · 응답 수 {evaluationResponses.length}명</span>
           <div>
             {evaluationLabels.map((item) => <p key={item.key}>{item.label} <b>{evaluationAverage[item.key].toFixed(1)}</b></p>)}
           </div>
+          <button className="secondary-button" type="button" onClick={publishEvaluationSummary}>공개 평균 반영</button>
         </div>
         <div className="admin-list">
           {evaluationResponses.length === 0 ? <p>저장된 평가 응답이 없습니다.</p> : evaluationResponses.map((response) => (
@@ -355,6 +410,7 @@ function Admin() {
       </section>
       <section className="content-section">
         <SectionHeader title="투표 기록 조회" description="저장된 투표 기록은 관리자만 확인할 수 있습니다." />
+        <button className="primary-button" type="button" onClick={closeElection}>투표 종료 및 결과 공개</button>
         <div className="admin-list">
           {voteRecords.length === 0 ? <p>저장된 투표 기록이 없습니다.</p> : voteRecords.map((vote) => (
             <article className="admin-row" key={vote.id}>
