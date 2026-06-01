@@ -10,8 +10,12 @@ service cloud.firestore {
       return request.auth.token.email;
     }
 
+    function hasEmail() {
+      return signedIn() && request.auth.token.email is string;
+    }
+
     function isDimigoAccount() {
-      return signedIn() && email().matches('.*@dimigo[.]hs[.]kr$');
+      return hasEmail() && email().matches('.*@dimigo[.]hs[.]kr$');
     }
 
     function adminPath(targetEmail) {
@@ -19,13 +23,13 @@ service cloud.firestore {
     }
 
     function isBootstrapAdmin() {
-      return signedIn() && email() in ['hwanwook100510@gmail.com'];
+      return hasEmail() && email() in ['hwanwook100510@gmail.com'];
     }
 
     function isAdmin() {
       return isBootstrapAdmin()
         || hasAdminAccessSession()
-        || (signedIn() && email() is string && exists(adminPath(email())));
+        || (hasEmail() && exists(adminPath(email())));
     }
 
     function adminAccessSessionPath() {
@@ -55,7 +59,7 @@ service cloud.firestore {
     }
 
     function isSelfEmail(targetEmail) {
-      return signedIn() && email() == targetEmail;
+      return hasEmail() && email() == targetEmail;
     }
 
     function assignmentPath(targetEmail) {
