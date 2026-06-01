@@ -84,8 +84,8 @@ function Evaluation() {
           setResponseCount(data.count ?? 0)
         }
 
-        if (user?.email) {
-          const responseSnapshot = await getDoc(doc(db!, 'evaluationResponses', user.email))
+        if (user?.uid) {
+          const responseSnapshot = await getDoc(doc(db!, 'evaluationResponses', user.uid))
           const response = responseSnapshot.exists() ? responseSnapshot.data() as EvaluationResponse : null
           setCurrentResponse(response)
           setHasSubmitted(Boolean(response))
@@ -99,7 +99,7 @@ function Evaluation() {
     }
 
     void loadEvaluationData()
-  }, [user?.email])
+  }, [user?.uid])
 
   const submitEvaluation = async () => {
     if (!db) { setMessage('DB에 연결할 수 없어 평가를 제출할 수 없습니다.'); return }
@@ -117,13 +117,14 @@ function Evaluation() {
 
     const response: EvaluationResponse = {
       ...scores,
+      uid: user.uid,
       email: user.email ?? '',
       name: profile.name,
       createdAt: serverTimestamp() as unknown as EvaluationResponse['createdAt'],
     }
 
     try {
-      await setDoc(doc(db, 'evaluationResponses', user.email ?? ''), response)
+      await setDoc(doc(db, 'evaluationResponses', user.uid), response)
       const nextSummary = applyResponseToSummary(summaryResult, responseCount, response, 1)
       setSummaryResult(nextSummary.summary)
       setResponseCount(nextSummary.count)
@@ -137,11 +138,11 @@ function Evaluation() {
 
   const resetEvaluation = async () => {
     if (!db) { setMessage('DB에 연결할 수 없어 평가 기록을 삭제할 수 없습니다.'); return }
-    if (!user?.email) { setMessage('로그인 후 평가 기록을 삭제할 수 있습니다.'); return }
+    if (!user?.uid) { setMessage('로그인 후 평가 기록을 삭제할 수 있습니다.'); return }
     if (isAdmin) { setMessage('관리자는 평가를 제출하거나 다시할 수 없습니다.'); return }
 
     try {
-      await deleteDoc(doc(db, 'evaluationResponses', user.email))
+      await deleteDoc(doc(db, 'evaluationResponses', user.uid))
       if (currentResponse) {
         const nextSummary = applyResponseToSummary(summaryResult, responseCount, currentResponse, -1)
         setSummaryResult(nextSummary.summary)

@@ -4,7 +4,7 @@ import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
 import { clubs } from '../data/clubs'
 import { db } from '../firebase'
-import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, ElectionResult, EvaluationResponse, FirestoreTime, PledgeProgress, PledgeStatus, PolicySuggestion, PolicySuggestionAuthor, StudentProfile, VoteRecord } from '../types'
+import type { AccountSuspension, ClubApplication, ClubRole, ClubRoleAssignment, EvaluationResponse, FirestoreTime, PledgeProgress, PledgeStatus, PolicySuggestion, PolicySuggestionAuthor, StudentProfile, VoteRecord } from '../types'
 
 const emptyPledgeForm = { id: '', title: '', description: '', status: '선거 중' as PledgeStatus }
 const evaluationLabels = [
@@ -13,10 +13,6 @@ const evaluationLabels = [
   { key: 'event', label: '행사' },
   { key: 'reflection', label: '복지' },
 ] as const
-const electionTarget = '바른생활부 차장 보궐선거'
-const electionCandidates = ['신의진', '문소연']
-const policyVoteTargets = ['자판기 설치', '전체 잔류일을 활용한 학예제 개최']
-
 async function loadAdminCollection(collectionName: string) {
   try {
     return await getDocs(collection(db!, collectionName))
@@ -56,14 +52,6 @@ function averageEvaluation(responses: EvaluationResponse[]) {
   }
 }
 
-function isValidVoteRecord(vote: VoteRecord) {
-  if (vote.target === electionTarget) {
-    return electionCandidates.includes(vote.choice)
-  }
-
-  return policyVoteTargets.includes(vote.target) && (vote.choice === '찬성' || vote.choice === '반대')
-}
-
 function Admin() {
   const { user, isAdmin } = useAuth()
   const [visibleProfiles, setVisibleProfiles] = useState<StudentProfile[]>([])
@@ -76,8 +64,24 @@ function Admin() {
   const [voteRecords, setVoteRecords] = useState<VoteRecord[]>([])
   const [pledges, setPledges] = useState<PledgeProgress[]>([])
   const [pledgeForm, setPledgeForm] = useState(emptyPledgeForm)
+  const [blockEmail, setBlockEmail] = useState('')
+  const [blockStatus, setBlockStatus] = useState('')
   const [message, setMessage] = useState('')
   const [loadingData, setLoadingData] = useState(false)
+
+  const callAdminApi = async (path: string, body: Record<string, unknown>) => {
+    if (!user) throw new Error('로그인 정보가 없습니다.')
+    const token = await user.getIdToken()
+    const response = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    })
+    const result = await response.json() as { ok?: boolean, message?: string, blocked?: boolean, uidSuspended?: boolean, display?: string }
+
+    if (!response.ok || !result.ok) throw new Error(result.message ?? '요청을 처리하지 못했습니다.')
+    return result
+  }
 
   useEffect(() => {
     if (!db || !isAdmin) {
@@ -171,14 +175,14 @@ function Admin() {
 
     if (!current) return
 
-    const nextProfile = { ...current, [field]: value }
+    const nextProfile = { ...current, uid: current.uid ?? email, [field]: value }
     if (!nextProfile.name.trim() || nextProfile.name.trim().length > 20 || !/^\d{1,2}$/.test(nextProfile.classNumber) || !/^\d{1,2}$/.test(nextProfile.number)) {
       setMessage('이름은 1~20자, 반과 번호는 1~2자리 숫자로 입력해주세요.')
       return
     }
 
     try {
-      await setDoc(doc(db!, 'studentProfiles', email), nextProfile, { merge: true })
+      await setDoc(doc(db!, 'studentProfiles', nextProfile.uid ?? email), nextProfile, { merge: true })
       setVisibleProfiles(visibleProfiles.map((profile) => profile.email === email ? nextProfile : profile))
     } catch {
       setMessage('학생 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -204,24 +208,14 @@ function Admin() {
   }
 
   const suspendAccount = async (email: string) => {
-    if (!db) {
-      setMessage('DB에 연결할 수 없어 계정을 정지할 수 없습니다.')
-      return
-    }
-
     if (user?.email === email) {
       setMessage('관리자 계정은 정지할 수 없습니다.')
       return
     }
 
-    const suspension: AccountSuspension = {
-      email,
-      suspendedAt: serverTimestamp() as unknown as AccountSuspension['suspendedAt'],
-      suspendedBy: user?.email ?? 'admin',
-    }
-
     try {
-      await setDoc(doc(db, 'suspendedUsers', email), suspension, { merge: true })
+      await callAdminApi('/api/admin/email-block', { email, action: 'block' })
+      const suspension: AccountSuspension = { email, suspendedAt: '방금', suspendedBy: user?.uid ?? 'admin' }
       setSuspensions([suspension, ...suspensions.filter((item) => item.email !== email)])
       setMessage(`${email} 계정을 정지했습니다.`)
     } catch {
@@ -230,13 +224,8 @@ function Admin() {
   }
 
   const restoreAccount = async (email: string) => {
-    if (!db) {
-      setMessage('DB에 연결할 수 없어 계정 정지를 해제할 수 없습니다.')
-      return
-    }
-
     try {
-      await deleteDoc(doc(db, 'suspendedUsers', email))
+      await callAdminApi('/api/admin/email-block', { email, action: 'unblock' })
       setSuspensions(suspensions.filter((item) => item.email !== email))
       setMessage(`${email} 계정 정지를 해제했습니다.`)
     } catch {
@@ -275,18 +264,8 @@ function Admin() {
   }
 
   const publishEvaluationSummary = async () => {
-    if (!db) { setMessage('DB에 연결할 수 없어 평가 집계를 공개할 수 없습니다.'); return }
-
-    const summary = averageEvaluation(evaluationResponses)
-
     try {
-      await setDoc(doc(db, 'publicStats', 'evaluationSummary'), {
-        promise: summary.promise,
-        communication: summary.communication,
-        event: summary.event,
-        reflection: summary.reflection,
-        count: evaluationResponses.length,
-      })
+      await callAdminApi('/api/admin/publish-evaluation', {})
       setMessage('평가 평균을 공개 페이지에 반영했습니다.')
     } catch {
       setMessage('평가 평균 공개 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -294,47 +273,31 @@ function Admin() {
   }
 
   const closeElection = async () => {
-    if (!db) { setMessage('DB에 연결할 수 없어 투표를 종료할 수 없습니다.'); return }
-
-    const voteSnapshot = await getDocs(collection(db, 'voteRecords'))
-    const latestVoteRecords = voteSnapshot.docs.map((item) => item.data() as VoteRecord).filter(isValidVoteRecord)
-    const counts = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
-      const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
-      acc[key] = (acc[key] ?? 0) + 1
-      return acc
-    }, {})
-    const targetTotals = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
-      acc[vote.target] = (acc[vote.target] ?? 0) + 1
-      return acc
-    }, {})
-    const totalVotes = latestVoteRecords.length
-    const percentages = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
-      const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
-      const targetTotal = targetTotals[vote.target] ?? 0
-      acc[key] = targetTotal === 0 ? 0 : ((counts[key] ?? 0) / targetTotal) * 100
-      return acc
-    }, {})
-    const maxCandidateVotes = Math.max(0, ...electionCandidates.map((candidate) => counts[candidate] ?? 0))
-    const winners = maxCandidateVotes === 0 ? [] : electionCandidates.filter((candidate) => (counts[candidate] ?? 0) === maxCandidateVotes)
-    const result: ElectionResult = {
-      id: 'current',
-      isClosed: true,
-      closedAt: serverTimestamp() as unknown as ElectionResult['closedAt'],
-      totalVotes,
-      counts,
-      percentages,
-      winners,
-    }
-
     try {
-      await Promise.all([
-        setDoc(doc(db, 'electionSettings', 'current'), { isClosed: true, closedAt: serverTimestamp() }),
-        setDoc(doc(db, 'electionResults', 'current'), result),
-      ])
-      setVoteRecords(latestVoteRecords)
+      await callAdminApi('/api/admin/close-election', {})
       setMessage('투표를 종료하고 결과를 공개했습니다.')
     } catch {
       setMessage('투표 종료 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  const manageEmailBlock = async (action: 'block' | 'unblock' | 'status') => {
+    const email = blockEmail.trim().toLowerCase()
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setBlockStatus('이메일 형식을 확인해주세요.')
+      return
+    }
+
+    try {
+      const result = await callAdminApi('/api/admin/email-block', { email, action })
+      if (action === 'status') {
+        setBlockStatus(`${result.display ?? '해당 계정'} 상태: ${result.blocked || result.uidSuspended ? '사용 중지됨' : '사용 가능'}`)
+        return
+      }
+      setBlockStatus(result.message ?? '처리되었습니다.')
+    } catch {
+      setBlockStatus('요청을 처리하지 못했습니다. 권한과 이메일 형식을 확인해주세요.')
     }
   }
 
@@ -365,6 +328,18 @@ function Admin() {
       />
       {message && <p className="success-message">{message}</p>}
       {loadingData && <p className="success-message">관리 데이터를 불러오는 중입니다.</p>}
+      <section className="content-section">
+        <SectionHeader title="사용 중지 계정 관리" description="가입 전 이메일 차단과 기존 계정 사용 중지를 서버 권한으로 처리합니다." />
+        <div className="form-card">
+          <label><span>이메일</span><input value={blockEmail} onChange={(event) => setBlockEmail(event.target.value)} placeholder="student@dimigo.hs.kr" /></label>
+          <div className="hero-actions">
+            <button className="primary-button" type="button" onClick={() => manageEmailBlock('block')}>사용 중지</button>
+            <button className="secondary-button" type="button" onClick={() => manageEmailBlock('unblock')}>사용 중지 해제</button>
+            <button className="secondary-button" type="button" onClick={() => manageEmailBlock('status')}>현재 상태 조회</button>
+          </div>
+          {blockStatus && <p className="success-message">{blockStatus}</p>}
+        </div>
+      </section>
       <div className="admin-list">
         {visibleProfiles.length === 0 ? <p>아직 회원가입한 학생이 없습니다.</p> : visibleProfiles.map((profile) => {
           const assignment = visibleAssignments.find((item) => item.email === profile.email)

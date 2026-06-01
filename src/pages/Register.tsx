@@ -34,12 +34,14 @@ function Register() {
     }
 
     const profile: StudentProfile = {
+      uid: user.uid,
       email: user.email,
       name: form.name.trim(),
       grade: form.grade,
       classNumber: form.classNumber.trim(),
       number: form.number.trim(),
       createdAt: serverTimestamp() as unknown as StudentProfile['createdAt'],
+      updatedAt: serverTimestamp() as unknown as StudentProfile['updatedAt'],
     }
 
     if (!profile.name || profile.name.length > 20 || !/^\d{1,2}$/.test(profile.classNumber) || !/^\d{1,2}$/.test(profile.number)) {
@@ -49,7 +51,15 @@ function Register() {
 
     if (db) {
       try {
-        await setDoc(doc(db, 'studentProfiles', user.email), profile)
+        const token = await user.getIdToken()
+        const accessResponse = await fetch('/api/student/check-access', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+
+        if (!accessResponse.ok) {
+          setMessage('이 계정은 현재 사용이 중지되어 있습니다. 문의가 필요한 경우 학생회 담당자에게 연락해 주세요.')
+          return
+        }
+
+        await setDoc(doc(db, 'studentProfiles', user.uid), profile)
         setMessage('회원가입 정보가 저장되었습니다. 이제 서비스를 사용할 수 있습니다.')
       } catch {
         setMessage('회원가입 정보 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -61,7 +71,7 @@ function Register() {
   }
 
   if (isAdmin) {
-    return <Navigate to="/admin" replace />
+    return <Navigate to="/" replace />
   }
 
   if (loading) {
@@ -87,6 +97,10 @@ function Register() {
 
   if (profileLoading) {
     return <section className="page-section"><div className="auth-card"><p>학생 정보를 확인하고 있습니다.</p></div></section>
+  }
+
+  if (!user.email?.toLowerCase().endsWith('@dimigo.hs.kr')) {
+    return <section className="page-section"><div className="auth-card"><h3>학교 계정이 필요합니다</h3><p>학생 회원가입은 @dimigo.hs.kr 계정으로만 진행할 수 있습니다.</p><AuthButton /></div></section>
   }
 
   if (profile) {

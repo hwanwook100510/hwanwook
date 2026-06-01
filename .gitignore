@@ -13,6 +13,10 @@ dist-ssr
 *.zip
 *.tar
 *.tar.gz
+*.pem
+*.key
+*service-account*.json
+firebase-adminsdk-*.json
 *.local
 .env
 .env.*

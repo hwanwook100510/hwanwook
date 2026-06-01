@@ -18,6 +18,11 @@ function isAllowedEmail(email: string | null) {
   return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN))
 }
 
+type AuthStatus = {
+  isAdmin?: boolean
+  isAllowedLogin?: boolean
+}
+
 function firebaseErrorCode(error: unknown) {
   return typeof error === 'object' && error && 'code' in error ? String(error.code) : ''
 }
@@ -49,28 +54,28 @@ function shouldTryRedirectLogin(error: unknown) {
     || code.includes('internal-error')
 }
 
-async function isSuspendedEmail(email: string | null) {
-  if (!db || !email || isAllowedEmail(email) === false) {
+async function isSuspendedUser(user: User | null) {
+  if (!db || !user?.uid || isAllowedEmail(user.email) === false) {
     return false
   }
 
-  const snapshot = await getDoc(doc(db, 'suspendedUsers', email))
+  const snapshot = await getDoc(doc(db, 'suspendedUsers', user.uid))
 
-  return snapshot.exists()
+  return snapshot.exists() && snapshot.data().enabled === true
 }
 
-async function loadAdminStatus(user: User | null) {
-  const email = user?.email ?? null
-
-  if (!db || !email) {
-    return false
+async function loadAuthStatus(user: User | null): Promise<AuthStatus> {
+  if (!user) {
+    return {}
   }
 
   try {
-    const snapshot = await getDoc(doc(db, 'adminUsers', normalizeEmail(email)))
-    return snapshot.exists()
+    const token = await user.getIdToken()
+    const response = await fetch('/api/auth/status', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    const data = await response.json() as AuthStatus
+    return response.ok ? data : {}
   } catch {
-    return false
+    return {}
   }
 }
 
@@ -92,9 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
 
     async function applyUser(currentUser: User | null) {
-      const currentIsAdmin = await loadAdminStatus(currentUser)
+      const currentStatus = await loadAuthStatus(currentUser)
+      const currentIsAdmin = currentStatus.isAdmin === true
 
-      if (currentUser && !currentIsAdmin && !isAllowedEmail(currentUser.email)) {
+      if (currentUser && currentStatus.isAllowedLogin !== true && !isAllowedEmail(currentUser.email)) {
         if (!mounted) return
         setUser(null)
         setIsAdmin(false)
@@ -104,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (currentUser && !currentUser.isAnonymous && await isSuspendedEmail(currentUser.email)) {
+      if (currentUser && await isSuspendedUser(currentUser)) {
         if (!mounted) return
         setUser(null)
         setIsAdmin(false)
@@ -158,9 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setPersistence(auth, browserLocalPersistence)
       const result = await signInWithPopup(auth, googleProvider)
 
-      const resultIsAdmin = await loadAdminStatus(result.user)
+      const resultStatus = await loadAuthStatus(result.user)
+      const resultIsAdmin = resultStatus.isAdmin === true
 
-      if (!resultIsAdmin && !isAllowedEmail(result.user.email)) {
+      if (resultStatus.isAllowedLogin !== true && !isAllowedEmail(result.user.email)) {
         setUser(null)
         setIsAdmin(false)
         setError(`${DOMAIN_ERROR} 선택한 계정: ${result.user.email ?? '확인 불가'}`)
@@ -168,7 +175,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (await isSuspendedEmail(result.user.email)) {
+      if (await isSuspendedUser(result.user)) {
         setUser(null)
         setIsAdmin(false)
         setError('정지된 계정입니다. 관리자에게 문의해주세요.')

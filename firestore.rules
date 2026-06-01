@@ -18,24 +18,63 @@ service cloud.firestore {
       return hasEmail() && email().matches('.*@dimigo[.]hs[.]kr$');
     }
 
+    function isVerifiedGoogleUser() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+
+    function isVerifiedSchoolGoogleUser() {
+      return isVerifiedGoogleUser() && isDimigoAccount();
+    }
+
     function adminPath(targetEmail) {
       return /databases/$(database)/documents/adminUsers/$(targetEmail);
     }
 
+    function uidAdminPath() {
+      return /databases/$(database)/documents/adminUsers/$(request.auth.uid);
+    }
+
+    function suspendedPath() {
+      return /databases/$(database)/documents/suspendedUsers/$(request.auth.uid);
+    }
+
+    function onboardingPath() {
+      return /databases/$(database)/documents/onboardingApprovals/$(request.auth.uid);
+    }
+
+    function isNotSuspended() {
+      return signedIn()
+        && (!exists(suspendedPath()) || get(suspendedPath()).data.enabled != true);
+    }
+
+    function hasOnboardingApproval() {
+      return signedIn()
+        && exists(onboardingPath())
+        && get(onboardingPath()).data.enabled == true;
+    }
+
     function isAdmin() {
-      return hasEmail() && exists(adminPath(email()));
+      return isVerifiedGoogleUser()
+        && exists(uidAdminPath())
+        && get(uidAdminPath()).data.enabled == true;
     }
 
     function isAllowedAccount() {
-      return isDimigoAccount() || isAdmin();
+      return (isVerifiedSchoolGoogleUser() && isNotSuspended() && hasOnboardingApproval()) || isAdmin();
     }
 
     function isStudent() {
-      return isDimigoAccount() && !isAdmin();
+      return isVerifiedSchoolGoogleUser() && isNotSuspended() && hasOnboardingApproval() && !isAdmin();
     }
 
     function isSelfEmail(targetEmail) {
       return hasEmail() && email() == targetEmail;
+    }
+
+    function isSelfUid(targetUid) {
+      return signedIn() && request.auth.uid == targetUid;
     }
 
     function assignmentPath(targetEmail) {
@@ -73,20 +112,23 @@ service cloud.firestore {
       return value is timestamp && value == request.time;
     }
 
-    function validProfile(data, targetEmail) {
-      return data.keys().hasOnly(['email', 'name', 'grade', 'classNumber', 'number', 'createdAt'])
+    function validProfile(data, targetUid) {
+      return data.keys().hasOnly(['uid', 'email', 'name', 'grade', 'classNumber', 'number', 'createdAt', 'updatedAt'])
+        && data.uid is string
         && data.email is string
         && data.name is string
-        && data.grade is string
-        && data.classNumber is string
-        && data.number is string
+        && (data.grade is string || data.grade is int)
+        && (data.classNumber is string || data.classNumber is int)
+        && (data.number is string || data.number is int)
         && data.createdAt is timestamp
-        && data.email == targetEmail
+        && (!('updatedAt' in data) || data.updatedAt is timestamp)
+        && data.uid == targetUid
+        && data.email == email()
         && data.name.size() > 0
         && data.name.size() <= 20
-        && data.grade in ['1', '2', '3']
-        && data.classNumber.matches('[0-9]{1,2}')
-        && data.number.matches('[0-9]{1,2}');
+        && data.grade in ['1', '2', '3', 1, 2, 3]
+        && data.classNumber in ['1', '2', '3', '4', '5', '6', 1, 2, 3, 4, 5, 6]
+        && data.number in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
     }
 
     function validApplication(data, targetEmail) {
@@ -195,18 +237,21 @@ service cloud.firestore {
     }
 
     function validSuggestionAuthor(data, suggestionId) {
-      return data.keys().hasOnly(['suggestionId', 'authorEmail', 'authorName'])
+      return data.keys().hasOnly(['suggestionId', 'authorEmail', 'authorName', 'authorUid'])
         && data.suggestionId is string
         && data.suggestionId == suggestionId
+        && data.authorUid is string
         && data.authorEmail is string
         && data.authorName is string
+        && data.authorUid == request.auth.uid
         && data.authorEmail == email()
         && data.authorName.size() > 0
         && data.authorName.size() <= 20;
     }
 
-    function validEvaluation(data, targetEmail) {
-      return data.keys().hasOnly(['email', 'name', 'createdAt', 'promise', 'communication', 'event', 'reflection'])
+    function validEvaluation(data, targetUid) {
+      return data.keys().hasOnly(['uid', 'email', 'name', 'createdAt', 'promise', 'communication', 'event', 'reflection'])
+        && data.uid is string
         && data.email is string
         && data.name is string
         && data.createdAt is timestamp
@@ -214,7 +259,8 @@ service cloud.firestore {
         && data.communication is int
         && data.event is int
         && data.reflection is int
-        && data.email == targetEmail
+        && data.uid == targetUid
+        && data.email == email()
         && data.name.size() > 0
         && data.name.size() <= 20
         && data.promise >= 1
@@ -227,8 +273,8 @@ service cloud.firestore {
         && data.reflection <= 5;
     }
 
-    function validEvaluationCreate(data, targetEmail) {
-      return validEvaluation(data, targetEmail) && isRequestTime(data.createdAt);
+    function validEvaluationCreate(data, targetUid) {
+      return validEvaluation(data, targetUid) && isRequestTime(data.createdAt);
     }
 
     function validSummary(data) {
@@ -250,9 +296,13 @@ service cloud.firestore {
     }
 
     function validVoteRecord(data, voteId) {
-      return data.keys().hasOnly(['id', 'email', 'name', 'target', 'choice', 'createdAt'])
+      return data.keys().hasOnly(['id', 'uid', 'electionId', 'email', 'name', 'target', 'choice', 'createdAt'])
         && data.id is string
+        && data.uid is string
+        && data.electionId is string
         && data.id == voteId
+        && data.uid == request.auth.uid
+        && data.electionId == 'current'
         && data.email is string
         && data.name is string
         && data.target is string
@@ -266,7 +316,7 @@ service cloud.firestore {
         && data.target.size() <= 80
         && data.choice.size() > 0
         && data.choice.size() <= 80
-        && data.id == email() + '_' + data.target
+        && data.id == data.electionId + '_' + request.auth.uid + '_' + data.target
         && validVoteChoice(data.target, data.choice);
     }
 
@@ -317,14 +367,14 @@ service cloud.firestore {
         && isRequestTime(data.suspendedAt);
     }
 
-    match /studentProfiles/{targetEmail} {
-      allow get: if isAdmin() || (isAllowedAccount() && isSelfEmail(targetEmail));
+    match /studentProfiles/{targetUid} {
+      allow get: if isAdmin() || (isAllowedAccount() && isSelfUid(targetUid));
       allow list: if isAdmin();
       allow create: if isAllowedAccount()
-        && isSelfEmail(targetEmail)
-        && validProfile(request.resource.data, targetEmail)
+        && isSelfUid(targetUid)
+        && validProfile(request.resource.data, targetUid)
         && isRequestTime(request.resource.data.createdAt);
-      allow update: if isAdmin() && validProfile(request.resource.data, targetEmail);
+      allow update: if isAdmin() && validProfile(request.resource.data, targetUid);
       allow delete: if false;
     }
 
@@ -380,15 +430,15 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    match /evaluationResponses/{targetEmail} {
-      allow get: if isAdmin() || (isStudent() && isSelfEmail(targetEmail));
+    match /evaluationResponses/{targetUid} {
+      allow get: if isAdmin() || (isStudent() && isSelfUid(targetUid));
       allow list: if isAdmin();
       allow create: if isStudent()
-        && isSelfEmail(targetEmail)
-        && !exists(/databases/$(database)/documents/evaluationResponses/$(targetEmail))
-        && validEvaluationCreate(request.resource.data, targetEmail);
+        && isSelfUid(targetUid)
+        && !exists(/databases/$(database)/documents/evaluationResponses/$(targetUid))
+        && validEvaluationCreate(request.resource.data, targetUid);
       allow update: if false;
-      allow delete: if isStudent() && isSelfEmail(targetEmail);
+      allow delete: if false;
     }
 
     match /voteRecords/{voteId} {
@@ -405,14 +455,12 @@ service cloud.firestore {
 
     match /electionSettings/{settingId} {
       allow get, list: if true;
-      allow create, update: if isAdmin() && settingId == 'current' && validElectionSetting(request.resource.data);
-      allow delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /electionResults/{resultId} {
       allow get, list: if isAdmin() || (exists(/databases/$(database)/documents/electionSettings/current) && get(/databases/$(database)/documents/electionSettings/current).data.isClosed == true);
-      allow create, update: if isAdmin() && resultId == 'current' && validElectionResult(request.resource.data);
-      allow delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
     match /pledgeProgress/{pledgeId} {
@@ -425,21 +473,31 @@ service cloud.firestore {
 
     match /publicStats/{statId} {
       allow get, list: if true;
-      allow create, update: if isAdmin() && statId == 'evaluationSummary' && validSummary(request.resource.data);
-      allow delete: if isAdmin();
+      allow create, update, delete: if false;
     }
 
-    match /suspendedUsers/{targetEmail} {
-      allow get: if isAdmin() || (signedIn() && isSelfEmail(targetEmail));
+    match /suspendedUsers/{targetUid} {
+      allow get: if isAdmin() || (signedIn() && isSelfUid(targetUid));
       allow list, delete: if isAdmin();
       allow create, update: if isAdmin()
-        && !isSelfEmail(targetEmail)
-        && validSuspension(request.resource.data, targetEmail);
+        && !isSelfUid(targetUid);
     }
 
-    match /adminUsers/{targetEmail} {
-      allow get: if isAdmin() && isSelfEmail(targetEmail);
+    match /adminUsers/{uid} {
+      allow read: if false;
       allow list, create, update, delete: if false;
+    }
+
+    match /blockedEmailHashes/{hash} {
+      allow read, write: if false;
+    }
+
+    match /onboardingApprovals/{uid} {
+      allow read, write: if false;
+    }
+
+    match /securityAuditLogs/{logId} {
+      allow read, write: if false;
     }
 
     match /{document=**} {

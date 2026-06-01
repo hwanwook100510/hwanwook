@@ -1,5 +1,6 @@
 import { Navigate, Link } from 'react-router-dom'
 import SectionHeader from '../components/SectionHeader'
+import { adminRoute } from '../config'
 import { useAuth } from '../contexts/useAuth'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 
@@ -27,7 +28,7 @@ function MyPage() {
           <h3>계정 설정</h3>
           <p>{isAdmin ? '관리자 계정으로 로그인되어 있습니다.' : '회원가입 이후 학생 정보는 본인이 직접 수정할 수 없습니다.'}</p>
           {!isAdmin && <p>학번이나 이름이 잘못 등록된 경우 관리자에게 수정 요청을 해주세요.</p>}
-          {isAdmin && <Link className="secondary-button" to="/admin">관리자 페이지로 이동</Link>}
+          {isAdmin && adminRoute && <Link className="secondary-button" to={adminRoute}>관리자 페이지로 이동</Link>}
           <button className="primary-button" type="button" onClick={logout}>로그아웃</button>
         </div>
         <div className="panel-card">

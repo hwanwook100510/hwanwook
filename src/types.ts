@@ -36,6 +36,7 @@ export type PolicySuggestionAuthor = {
   suggestionId: string
   authorEmail: string
   authorName: string
+  authorUid?: string
 }
 
 export type EvaluationResult = {
@@ -47,6 +48,7 @@ export type EvaluationResult = {
 
 export type ClubApplication = {
   id: string
+  uid?: string
   email: string
   name: string
   grade: string
@@ -62,12 +64,14 @@ export type ClubApplication = {
 }
 
 export type StudentProfile = {
+  uid?: string
   email: string
   name: string
   grade: string
   classNumber: string
   number: string
   createdAt: FirestoreTime
+  updatedAt?: FirestoreTime
 }
 
 export type ClubRole = '동아리원' | '동아리장'
@@ -86,6 +90,7 @@ export type AccountSuspension = {
 }
 
 export type EvaluationResponse = EvaluationResult & {
+  uid?: string
   email: string
   name: string
   createdAt: FirestoreTime
@@ -93,6 +98,8 @@ export type EvaluationResponse = EvaluationResult & {
 
 export type VoteRecord = {
   id: string
+  uid?: string
+  electionId?: string
   email: string
   name: string
   target: string
