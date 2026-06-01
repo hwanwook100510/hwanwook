@@ -99,6 +99,10 @@ function Register() {
     return <section className="page-section"><div className="auth-card"><p>학생 정보를 확인하고 있습니다.</p></div></section>
   }
 
+  if (!user.email?.toLowerCase().endsWith('@dimigo.hs.kr')) {
+    return <section className="page-section"><div className="auth-card"><h3>학교 계정이 필요합니다</h3><p>학생 회원가입은 @dimigo.hs.kr 계정으로만 진행할 수 있습니다.</p><AuthButton /></div></section>
+  }
+
   if (profile) {
     return <Navigate to="/mypage" replace />
   }

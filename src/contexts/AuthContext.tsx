@@ -9,7 +9,6 @@ import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
 
 const DIMIGO_DOMAIN = '@dimigo.hs.kr'
-const DOMAIN_ERROR = '한국디지털미디어고등학교 계정만 로그인할 수 있습니다.'
 const CONFIG_ERROR = '서비스 설정이 아직 완료되지 않았습니다. 관리자에게 문의해주세요.'
 const redirectStartedKey = 'dimigo-google-redirect-started'
 
@@ -94,16 +93,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function applyUser(currentUser: User | null) {
       const currentIsAdmin = await loadAdminStatus(currentUser)
 
-      if (currentUser && !currentIsAdmin && !isAllowedEmail(currentUser.email)) {
-        if (!mounted) return
-        setUser(null)
-        setIsAdmin(false)
-        setError(`${DOMAIN_ERROR} 선택한 계정: ${currentUser.email ?? '확인 불가'}`)
-        await signOut(activeAuth)
-        if (mounted) setLoading(false)
-        return
-      }
-
       if (currentUser && await isSuspendedUser(currentUser)) {
         if (!mounted) return
         setUser(null)
@@ -159,14 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await signInWithPopup(auth, googleProvider)
 
       const resultIsAdmin = await loadAdminStatus(result.user)
-
-      if (!resultIsAdmin && !isAllowedEmail(result.user.email)) {
-        setUser(null)
-        setIsAdmin(false)
-        setError(`${DOMAIN_ERROR} 선택한 계정: ${result.user.email ?? '확인 불가'}`)
-        await signOut(auth)
-        return
-      }
 
       if (await isSuspendedUser(result.user)) {
         setUser(null)

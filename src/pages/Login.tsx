@@ -24,11 +24,11 @@ function Login() {
       <SectionHeader
         eyebrow="Dimigo Account"
         title="로그인이 필요한 기능입니다"
-        description="정책 제안, 동아리 지원, 평가제 참여는 한국디지털미디어고등학교 Google 계정으로 로그인한 뒤 사용할 수 있습니다."
+            description="학생 기능은 한국디지털미디어고등학교 Google 계정으로, 관리자 기능은 등록된 관리자 Google 계정으로 사용할 수 있습니다."
       />
       <div className="auth-card">
         <h3>학교 계정으로 로그인</h3>
-        <p>@dimigo.hs.kr 계정만 접근할 수 있습니다. 관리자는 등록된 Google 계정으로 로그인해주세요.</p>
+        <p>학생은 @dimigo.hs.kr 계정으로, 관리자는 등록된 Google 계정으로 로그인해주세요.</p>
         <AuthButton />
       </div>
     </section>
