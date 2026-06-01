@@ -570,6 +570,11 @@ main:has(.design-page) { width: 100%; }
 .eval-bottom p span { color: #f72e7d; }
 .eval-form { display: grid; gap: 14px; background: linear-gradient(135deg,#fff,#f8fafc); }
 .eval-form label, .suggestion-form label { display: grid; gap: 14px; color: #33343a; font-weight: 850; }
+.suggestion-form-fields { display: flex; flex-direction: column; gap: 20px; }
+.suggestion-form-fields .text-area-group { margin-bottom: 4px; }
+.suggestion-anonymous { display: flex!important; align-items: center; gap: 10px; min-height: 48px; width: fit-content; margin-top: 8px; padding: 12px 16px; }
+.suggestion-anonymous input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; }
+.suggestion-submit { align-self: flex-start; margin-top: 14px; }
 .eval-form input, .suggestion-form input, .suggestion-form textarea, .suggestion-form select { width: 100%; border: 1px solid #eee3e8; border-radius: 8px; padding: 12px; }
 .suggestion-form textarea { min-height: 118px; }
 .eval-form input[type='range'] { height: 20px; border: 0; border-radius: 999px; padding: 0; appearance: none; background: linear-gradient(90deg, #9b58c7 var(--value), #e5e7eb 0); background-size: 100% 6px; background-repeat: no-repeat; background-position: center; }
@@ -586,7 +591,7 @@ main:has(.design-page) { width: 100%; }
 .score-segment-bar button { min-height: 42px; border: 0; border-radius: 999px; color: #8a6074; background: #f5f6f8; font-weight: 950; transition: background .16s ease, color .16s ease, transform .16s ease; }
 .score-segment-bar button.active { color: #fff; background: linear-gradient(135deg, #f72e7d, #ff78b4); }
 .score-segment-bar button:hover { transform: translateY(-1px); }
-.suggestion-form .design-primary, .suggestion-form .success-message { margin-top: 14px; }
+.suggestion-form > .design-primary, .suggestion-form .success-message { margin-top: 14px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
 .form-grid label:first-child, .form-grid > div:nth-child(3), .form-grid label:nth-child(4), .form-grid label:nth-child(5) { grid-column: 1 / -1; }
 .suggestion-form h2 { color: #f72e7d; }
