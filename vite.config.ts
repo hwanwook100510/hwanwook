@@ -6,6 +6,8 @@ export default defineConfig({
   plugins: [react()],
   build: {
     sourcemap: false,
+    cssCodeSplit: false,
+    assetsInlineLimit: 8192,
     rolldownOptions: {
       output: {
         manualChunks(id) {

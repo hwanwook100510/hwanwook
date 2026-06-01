@@ -83,6 +83,7 @@ function Suggestions() {
       suggestionId: suggestionRef.id,
       authorEmail: user.email ?? '',
       authorName: profile.name,
+      authorUid: user.uid,
     }
 
     try {

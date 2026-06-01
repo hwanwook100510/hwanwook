@@ -49,26 +49,26 @@ function shouldTryRedirectLogin(error: unknown) {
     || code.includes('internal-error')
 }
 
-async function isSuspendedEmail(email: string | null) {
-  if (!db || !email || isAllowedEmail(email) === false) {
+async function isSuspendedUser(user: User | null) {
+  if (!db || !user?.uid || isAllowedEmail(user.email) === false) {
     return false
   }
 
-  const snapshot = await getDoc(doc(db, 'suspendedUsers', email))
+  const snapshot = await getDoc(doc(db, 'suspendedUsers', user.uid))
 
-  return snapshot.exists()
+  return snapshot.exists() && snapshot.data().enabled === true
 }
 
 async function loadAdminStatus(user: User | null) {
-  const email = user?.email ?? null
-
-  if (!db || !email) {
+  if (!user) {
     return false
   }
 
   try {
-    const snapshot = await getDoc(doc(db, 'adminUsers', normalizeEmail(email)))
-    return snapshot.exists()
+    const token = await user.getIdToken()
+    const response = await fetch('/api/auth/status', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    const data = await response.json() as { isAdmin?: boolean }
+    return response.ok && data.isAdmin === true
   } catch {
     return false
   }
@@ -104,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (currentUser && !currentUser.isAnonymous && await isSuspendedEmail(currentUser.email)) {
+      if (currentUser && await isSuspendedUser(currentUser)) {
         if (!mounted) return
         setUser(null)
         setIsAdmin(false)
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (await isSuspendedEmail(result.user.email)) {
+      if (await isSuspendedUser(result.user)) {
         setUser(null)
         setIsAdmin(false)
         setError('정지된 계정입니다. 관리자에게 문의해주세요.')

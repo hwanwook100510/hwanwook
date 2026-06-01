@@ -4,6 +4,7 @@ import { NavLink } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { db } from '../firebase'
 import { useStudentProfile } from '../hooks/useStudentProfile'
+import { adminRoute } from '../config'
 import AuthButton from './AuthButton'
 
 const navigation = [
@@ -56,7 +57,7 @@ function Layout({ children }: LayoutProps) {
   const baseNavigation = navigation.filter((item) => item.to !== '/register' || (user && !isAdmin && !profile))
   const extraNavigation = [
     ...(showClubDashboardNav && hasClubPermission ? [{ to: '/club-dashboard', label: '동아리 관리' }] : []),
-    ...(isAdmin ? [{ to: '/admin', label: '관리자' }] : []),
+    ...(isAdmin && adminRoute ? [{ to: adminRoute, label: '관리자' }] : []),
   ]
   const visibleNavigation = [...baseNavigation, ...extraNavigation]
 

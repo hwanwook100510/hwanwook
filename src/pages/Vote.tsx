@@ -15,9 +15,10 @@ const policyVotes = [
   { title: '전체 잔류일을 활용한 학예제 개최', desc: '전체 잔류일을 활용한 학예제 개최 추진에 대한 의견을 묻습니다.' },
 ]
 const electionTarget = '바른생활부 차장 보궐선거'
+const electionId = 'current'
 
 function Icon({ name }: { name: string }) { return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg> }
-function voteId(email: string, target: string) { return `${email}_${target}` }
+function voteId(uid: string, target: string) { return `${electionId}_${uid}_${target}` }
 
 function Vote() {
   const { user, isAdmin, loginWithGoogle } = useAuth()
@@ -45,9 +46,9 @@ function Vote() {
           if (resultSnapshot.exists()) setResult(resultSnapshot.data() as ElectionResult)
         }
 
-        if (user?.email) {
+        if (user?.uid) {
           const targets = [...policyVotes.map((item) => item.title), electionTarget]
-          const snapshots = await Promise.all(targets.map((target) => getDoc(doc(db!, 'voteRecords', voteId(user.email ?? '', target)))))
+          const snapshots = await Promise.all(targets.map((target) => getDoc(doc(db!, 'voteRecords', voteId(user.uid, target)))))
           const submitted = snapshots.reduce<Record<string, string>>((acc, snapshot, index) => {
             if (snapshot.exists()) acc[targets[index]] = (snapshot.data() as VoteRecord).choice
             return acc
@@ -60,7 +61,7 @@ function Vote() {
     }
 
     void loadVoteData()
-  }, [user?.email])
+  }, [user?.uid])
 
   const submitVote = async (target: string, choice: string) => {
     if (!db) { setMessage('DB에 연결할 수 없어 투표할 수 없습니다.'); return }
@@ -71,9 +72,11 @@ function Vote() {
     if (isClosed) { setMessage('종료된 투표에는 참여할 수 없습니다.'); return }
     if (submittedTargets[target]) { setMessage('이미 해당 투표에 참여했습니다. 투표는 한 번만 가능합니다.'); return }
 
-    const id = voteId(user.email, target)
+    const id = voteId(user.uid, target)
     const vote: VoteRecord = {
       id,
+      uid: user.uid,
+      electionId,
       email: user.email,
       name: profile.name,
       target,

@@ -1,23 +1,23 @@
-import { lazy, Suspense, useEffect, useLayoutEffect } from 'react'
-import { Route, Routes, useLocation } from 'react-router-dom'
+import { useEffect, useLayoutEffect } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-
-const Admin = lazy(() => import('./pages/Admin'))
-const ClubDashboard = lazy(() => import('./pages/ClubDashboard'))
-const ClubList = lazy(() => import('./pages/ClubList'))
-const ClubQuestions = lazy(() => import('./pages/ClubQuestions'))
-const ClubSelect = lazy(() => import('./pages/ClubSelect'))
-const ClubSupport = lazy(() => import('./pages/ClubSupport'))
-const Evaluation = lazy(() => import('./pages/Evaluation'))
-const Home = lazy(() => import('./pages/Home'))
-const Login = lazy(() => import('./pages/Login'))
-const Members = lazy(() => import('./pages/Members'))
-const MyPage = lazy(() => import('./pages/MyPage'))
-const PolicyProgress = lazy(() => import('./pages/PolicyProgress'))
-const Register = lazy(() => import('./pages/Register'))
-const Suggestions = lazy(() => import('./pages/Suggestions'))
-const Vote = lazy(() => import('./pages/Vote'))
+import { adminRoute } from './config'
+import Admin from './pages/Admin'
+import ClubDashboard from './pages/ClubDashboard'
+import ClubList from './pages/ClubList'
+import ClubQuestions from './pages/ClubQuestions'
+import ClubSelect from './pages/ClubSelect'
+import ClubSupport from './pages/ClubSupport'
+import Evaluation from './pages/Evaluation'
+import Home from './pages/Home'
+import Login from './pages/Login'
+import Members from './pages/Members'
+import MyPage from './pages/MyPage'
+import PolicyProgress from './pages/PolicyProgress'
+import Register from './pages/Register'
+import Suggestions from './pages/Suggestions'
+import Vote from './pages/Vote'
 
 function scrollToTop() {
   window.scrollTo(0, 0)
@@ -82,25 +82,25 @@ function App() {
 
   return (
     <Layout>
-      <Suspense fallback={<div className="auth-card route-loading"><p>페이지를 불러오고 있습니다.</p></div>}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/members" element={<Members />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
-          <Route path="/club-dashboard" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/evaluation" element={<Evaluation />} />
-          <Route path="/vote" element={<Vote />} />
-          <Route path="/clubs" element={<ClubSupport />} />
-          <Route path="/clubs/list" element={<ClubList />} />
-          <Route path="/clubs/select/:priority" element={<ClubSelect />} />
-          <Route path="/clubs/questions/:clubName" element={<ClubQuestions />} />
-          <Route path="/suggestions" element={<Suggestions />} />
-          <Route path="/progress" element={<PolicyProgress />} />
-        </Routes>
-      </Suspense>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/members" element={<Members />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
+        <Route path="/admin" element={<Navigate to="/" replace />} />
+        {adminRoute && <Route path={adminRoute} element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />}
+        <Route path="/club-dashboard" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/evaluation" element={<Evaluation />} />
+        <Route path="/vote" element={<Vote />} />
+        <Route path="/clubs" element={<ClubSupport />} />
+        <Route path="/clubs/list" element={<ClubList />} />
+        <Route path="/clubs/select/:priority" element={<ClubSelect />} />
+        <Route path="/clubs/questions/:clubName" element={<ClubQuestions />} />
+        <Route path="/suggestions" element={<Suggestions />} />
+        <Route path="/progress" element={<PolicyProgress />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
     </Layout>
   )
 }
