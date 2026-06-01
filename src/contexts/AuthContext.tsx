@@ -85,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
-      if (currentUser && !adminCodeAccepted && !isAllowedEmail(currentUser.email)) {
+      if (currentUser && !currentUser.isAnonymous && !adminCodeAccepted && !isAllowedEmail(currentUser.email)) {
         setUser(null)
         setIsAdmin(false)
         setError(DOMAIN_ERROR)
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
 
-      if (currentUser && await isSuspendedEmail(currentUser.email)) {
+      if (currentUser && !currentUser.isAnonymous && await isSuspendedEmail(currentUser.email)) {
         setUser(null)
         setIsAdmin(false)
         setError('')
