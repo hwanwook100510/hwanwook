@@ -45,11 +45,20 @@ function googleLoginErrorMessage(error: unknown) {
     return `Vercel 배포 환경의 Firebase 설정을 확인해주세요. 현재 도메인: ${origin}. Firebase Authorized domains에 이 도메인을 추가하고, Vercel 환경변수 VITE_FIREBASE_AUTH_DOMAIN/API_KEY/PROJECT_ID가 로컬 .env와 같은지 확인해야 합니다. (${code})`
   }
 
-  if (code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request')) {
+  if (code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request') || code.includes('internal-error')) {
     return ''
   }
 
   return `Google 로그인 중 오류가 발생했습니다.${code ? ` (${code})` : ''}`
+}
+
+function shouldTryRedirectLogin(error: unknown) {
+  const code = firebaseErrorCode(error)
+
+  return code.includes('popup-blocked')
+    || code.includes('popup-closed')
+    || code.includes('cancelled-popup-request')
+    || code.includes('internal-error')
 }
 
 async function isSuspendedEmail(email: string | null) {
@@ -196,7 +205,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       const fallbackMessage = googleLoginErrorMessage(error)
 
-      if (fallbackMessage) {
+      if (fallbackMessage || !shouldTryRedirectLogin(error)) {
         setError(fallbackMessage)
         return
       }
