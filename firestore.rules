@@ -75,7 +75,8 @@ service cloud.firestore {
     }
 
     function isClubLeader(club) {
-      return isAllowedAccount()
+      return hasEmail()
+        && isAllowedAccount()
         && exists(assignmentPath(email()))
         && currentAssignment().club == club
         && currentAssignment().role == '동아리장';
@@ -357,10 +358,7 @@ service cloud.firestore {
         || isClubLeader(resource.data.firstChoice)
         || isClubLeader(resource.data.secondChoice)
         || isClubLeader(resource.data.thirdChoice);
-      allow list: if isAdmin()
-        || isClubLeader(resource.data.firstChoice)
-        || isClubLeader(resource.data.secondChoice)
-        || isClubLeader(resource.data.thirdChoice);
+      allow list: if isAdmin();
       allow create: if isAllowedAccount()
         && isSelfEmail(targetEmail)
         && validUserApplicationCreate(request.resource.data, targetEmail);
