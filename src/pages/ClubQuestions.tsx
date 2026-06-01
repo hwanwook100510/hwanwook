@@ -22,7 +22,8 @@ type ClubQuestionAnswer = {
 function ClubQuestions() {
   const { clubName = '' } = useParams()
   const { user } = useAuth()
-  const [answers, setAnswers] = useClientState<ClubQuestionAnswer[]>([])
+  const [answers, setAnswers] = useClientState<ClubQuestionAnswer[]>('club-question-answer-history', [])
+  const [, setQuestionAnswers] = useClientState<string[]>('club-question-answers', [])
   const savedAnswer = answers.find((answer) => answer.email === user?.email && answer.club === clubName)
   const [form, setForm] = useState(savedAnswer?.answers ?? ['', '', ''])
   const [message, setMessage] = useState('')
@@ -44,6 +45,7 @@ function ClubQuestions() {
     }
 
     setAnswers([answer, ...answers.filter((item) => !(item.email === user.email && item.club === clubName))])
+    setQuestionAnswers(answer.answers)
     setMessage('동아리 질문 답변이 저장되었습니다. 지원 페이지로 돌아가 2순위와 3순위를 선택해주세요.')
   }
 

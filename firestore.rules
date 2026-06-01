@@ -89,7 +89,7 @@ service cloud.firestore {
     }
 
     function validApplication(data, targetEmail) {
-      return data.keys().hasOnly(['id', 'email', 'name', 'grade', 'classNumber', 'number', 'firstChoice', 'secondChoice', 'thirdChoice', 'createdAt', 'locked', 'unlockedByAdmin'])
+      return data.keys().hasOnly(['id', 'email', 'name', 'grade', 'classNumber', 'number', 'firstChoice', 'secondChoice', 'thirdChoice', 'questionAnswers', 'createdAt', 'locked', 'unlockedByAdmin'])
         && data.id is string
         && data.email is string
         && data.name is string
@@ -115,6 +115,7 @@ service cloud.firestore {
         && data.secondChoice.size() <= 30
         && data.thirdChoice.size() > 0
         && data.thirdChoice.size() <= 30
+        && (!('questionAnswers' in data) || (data.questionAnswers is list && data.questionAnswers.size() <= 3))
         && data.firstChoice != data.secondChoice
         && data.firstChoice != data.thirdChoice
         && data.secondChoice != data.thirdChoice;

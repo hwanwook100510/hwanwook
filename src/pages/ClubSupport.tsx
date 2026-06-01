@@ -10,8 +10,7 @@ import { useStudentProfile } from '../hooks/useStudentProfile'
 import type { ClubApplication } from '../types'
 
 const emptyForm = { firstChoice: '', secondChoice: '', thirdChoice: '' }
-const featuredClubs = clubs.slice(0, 6)
-const clubActivities = ['전체 분야', ...Array.from(new Set(featuredClubs.map((club) => club.activity)))]
+const clubActivities = ['전체 분야', ...Array.from(new Set(clubs.map((club) => club.activity)))]
 const applicationDeadline = import.meta.env.VITE_CLUB_APPLICATION_DEADLINE
 
 function Icon({ name }: { name: string }) { return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg> }
@@ -19,15 +18,16 @@ function Icon({ name }: { name: string }) { return <svg className="home-icon" ar
 function ClubSupport() {
   const { user } = useAuth()
   const { profile } = useStudentProfile()
-  const [pendingFirstChoice, setPendingFirstChoice] = useClientState('')
-  const [pendingSecondChoice, setPendingSecondChoice] = useClientState('')
-  const [pendingThirdChoice, setPendingThirdChoice] = useClientState('')
+  const [pendingFirstChoice, setPendingFirstChoice] = useClientState('club-first-choice', '')
+  const [pendingSecondChoice, setPendingSecondChoice] = useClientState('club-second-choice', '')
+  const [pendingThirdChoice, setPendingThirdChoice] = useClientState('club-third-choice', '')
+  const [questionAnswers] = useClientState<string[]>('club-question-answers', [])
   const [savedApplication, setSavedApplication] = useState<ClubApplication | null>(null)
   const [form, setForm] = useState({ ...emptyForm, firstChoice: pendingFirstChoice, secondChoice: pendingSecondChoice, thirdChoice: pendingThirdChoice })
   const [message, setMessage] = useState('')
   const [activityFilter, setActivityFilter] = useState('전체 분야')
   const selected = [form.firstChoice, form.secondChoice, form.thirdChoice].filter(Boolean)
-  const visibleClubs = activityFilter === '전체 분야' ? featuredClubs : featuredClubs.filter((club) => club.activity === activityFilter)
+  const visibleClubs = activityFilter === '전체 분야' ? clubs : clubs.filter((club) => club.activity === activityFilter)
   const isPastDeadline = Boolean(applicationDeadline && new Date() > new Date(applicationDeadline))
   const isLocked = Boolean(savedApplication?.locked !== false && savedApplication)
 
@@ -81,6 +81,7 @@ function ClubSupport() {
       classNumber: profile.classNumber,
       number: profile.number,
       ...form,
+      questionAnswers,
       createdAt: savedApplication?.createdAt ?? serverTimestamp() as unknown as ClubApplication['createdAt'],
       locked: true,
       unlockedByAdmin: false,

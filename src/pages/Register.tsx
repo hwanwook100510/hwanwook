@@ -42,6 +42,11 @@ function Register() {
       createdAt: serverTimestamp() as unknown as StudentProfile['createdAt'],
     }
 
+    if (!profile.name || profile.name.length > 20 || !/^\d{1,2}$/.test(profile.classNumber) || !/^\d{1,2}$/.test(profile.number)) {
+      setMessage('이름은 1~20자, 반과 번호는 1~2자리 숫자로 입력해주세요.')
+      return
+    }
+
     if (db) {
       try {
         await setDoc(doc(db, 'studentProfiles', user.email), profile)
@@ -106,8 +111,8 @@ function Register() {
               <option value="3">3학년</option>
             </select>
           </label>
-          <label><span>반</span><input required inputMode="numeric" maxLength={2} value={form.classNumber} onChange={(event) => setForm({ ...form, classNumber: event.target.value })} /></label>
-          <label><span>번호</span><input required inputMode="numeric" maxLength={2} value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value })} /></label>
+          <label><span>반</span><input required inputMode="numeric" pattern="[0-9]{1,2}" maxLength={2} value={form.classNumber} onChange={(event) => setForm({ ...form, classNumber: event.target.value.replace(/\D/g, '') })} /></label>
+          <label><span>번호</span><input required inputMode="numeric" pattern="[0-9]{1,2}" maxLength={2} value={form.number} onChange={(event) => setForm({ ...form, number: event.target.value.replace(/\D/g, '') })} /></label>
           <label><span>이름</span><input required maxLength={20} value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
           <button className="primary-button" type="submit">
             회원가입 정보 저장

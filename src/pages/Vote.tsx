@@ -14,7 +14,6 @@ const policyVotes = [
   { title: '자판기 설치', desc: '학생 편의를 위한 교내 자판기 설치 추진에 대한 의견을 묻습니다.' },
   { title: '전체 잔류일을 활용한 학예제 개최', desc: '전체 잔류일을 활용한 학예제 개최 추진에 대한 의견을 묻습니다.' },
 ]
-const totalStudents = 540
 const electionTarget = '바른생활부 차장 보궐선거'
 
 function Icon({ name }: { name: string }) { return <svg className="home-icon" aria-hidden="true"><use href={`/icons.svg#${name}`} /></svg> }
@@ -22,7 +21,7 @@ function voteId(email: string, target: string) { return `${email}_${target}` }
 
 function Vote() {
   const { user, isAdmin, loginWithGoogle } = useAuth()
-  const { profile } = useStudentProfile()
+  const { profile, loading: profileLoading } = useStudentProfile()
   const [selectedCandidate, setSelectedCandidate] = useState('')
   const [submittedTargets, setSubmittedTargets] = useState<Record<string, string>>({})
   const [isClosed, setIsClosed] = useState(false)
@@ -66,6 +65,8 @@ function Vote() {
   const submitVote = async (target: string, choice: string) => {
     if (!db) { setMessage('DB에 연결할 수 없어 투표할 수 없습니다.'); return }
     if (!user?.email) { setMessage('로그인 후 투표할 수 있습니다.'); return }
+    if (profileLoading) { setMessage('학생 정보를 확인하는 중입니다. 잠시 후 다시 시도해주세요.'); return }
+    if (!profile) { setMessage('회원가입 정보를 먼저 등록해주세요.'); return }
     if (isAdmin) { setMessage('관리자는 투표할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.'); return }
     if (isClosed) { setMessage('종료된 투표에는 참여할 수 없습니다.'); return }
     if (submittedTargets[target]) { setMessage('이미 해당 투표에 참여했습니다. 투표는 한 번만 가능합니다.'); return }
@@ -74,7 +75,7 @@ function Vote() {
     const vote: VoteRecord = {
       id,
       email: user.email,
-      name: profile?.name || user.displayName || '학생',
+      name: profile.name,
       target,
       choice,
       createdAt: serverTimestamp() as unknown as VoteRecord['createdAt'],
@@ -89,15 +90,16 @@ function Vote() {
     }
   }
 
-  const totalParticipants = result?.totalVotes ?? Object.keys(submittedTargets).length
-  const canVote = Boolean(user && !isAdmin && !isClosed)
+  const totalBallots = result?.totalVotes ?? Object.keys(submittedTargets).length
+  const canVote = Boolean(user && profile && !isAdmin && !isClosed)
 
   return (
     <div className="design-page vote-page">
       <section className="design-hero compact"><div><h1>학생회 투표</h1><p>제안된 학생회 정책에 찬반 의사를 표현하고, 학생회 보궐선거에 참여하여 우리 학교의 미래를 함께 만들어 주세요.</p>{!user && <button className="design-primary" type="button" onClick={loginWithGoogle}>Google로 로그인</button>}</div></section>
       {dbError && <section className="design-wide"><p className="success-message">{dbError}</p></section>}
       {message && <section className="design-wide"><p className="success-message">{message}</p></section>}
-      <section className="design-wide stat-grid four"><article><Icon name="vote" /><b>진행 중 투표</b><strong>{isClosed ? '종료' : '3건'}</strong><span>정책 2건 · 선거 1건</span></article><article><Icon name="check" /><b>정책 찬반 투표</b><strong>2건</strong><span>참여 가능한 정책 투표</span></article><article><Icon name="users" /><b>보궐선거 후보</b><strong>{candidates.length}명</strong><span>바른생활부 차장 보궐선거</span></article><article><Icon name="users" /><b>총 참여</b><strong>{totalParticipants.toLocaleString()}명</strong><span>전체 재학생 {totalStudents.toLocaleString()}명</span></article></section>
+      {user && !isAdmin && !profile && <section className="design-wide"><Link className="design-primary" to="/register">회원가입 후 투표하기</Link></section>}
+      <section className="design-wide stat-grid four"><article><Icon name="vote" /><b>진행 중 투표</b><strong>{isClosed ? '종료' : '3건'}</strong><span>정책 2건 · 선거 1건</span></article><article><Icon name="check" /><b>정책 찬반 투표</b><strong>2건</strong><span>참여 가능한 정책 투표</span></article><article><Icon name="users" /><b>보궐선거 후보</b><strong>{candidates.length}명</strong><span>바른생활부 차장 보궐선거</span></article><article><Icon name="users" /><b>{isClosed ? '총 투표' : '나의 참여'}</b><strong>{totalBallots.toLocaleString()}건</strong><span>학생 1인 안건별 1회</span></article></section>
       {isAdmin && <section className="design-wide"><p className="success-message">관리자는 투표할 수 없습니다. 관리자 페이지에서 기록 조회와 종료 관리를 진행해주세요.</p></section>}
       <section className="design-wide vote-layout">
         <div>

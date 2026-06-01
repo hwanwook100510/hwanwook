@@ -18,9 +18,9 @@ function isPriority(value: string | undefined): value is Priority {
 function ClubSelect() {
   const { priority } = useParams()
   const navigate = useNavigate()
-  const [, setFirstChoice] = useClientState('')
-  const [, setSecondChoice] = useClientState('')
-  const [, setThirdChoice] = useClientState('')
+  const [, setFirstChoice] = useClientState('club-first-choice', '')
+  const [, setSecondChoice] = useClientState('club-second-choice', '')
+  const [, setThirdChoice] = useClientState('club-third-choice', '')
   const currentPriority = isPriority(priority) ? priority : 'first'
   const label = priorityLabels[currentPriority]
 

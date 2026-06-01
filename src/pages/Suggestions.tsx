@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { collection, doc, getDocs, serverTimestamp, setDoc } from 'firebase/firestore'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 import { db } from '../firebase'
@@ -19,7 +20,7 @@ function formatDate(value: PolicySuggestion['createdAt']) {
 
 function Suggestions() {
   const { user, isAdmin, loginWithGoogle } = useAuth()
-  const { profile } = useStudentProfile()
+  const { profile, loading: profileLoading } = useStudentProfile()
   const [visibleSuggestions, setVisibleSuggestions] = useState<PolicySuggestion[]>([])
   const [suggestionAuthors, setSuggestionAuthors] = useState<PolicySuggestionAuthor[]>([])
   const [form, setForm] = useState(emptyForm)
@@ -50,6 +51,8 @@ function Suggestions() {
   const submitSuggestion = async () => {
     if (!db) { setMessage('DB에 연결할 수 없어 정책 제안을 제출할 수 없습니다.'); return }
     if (!user) { setMessage('로그인 후 정책 제안을 제출할 수 있습니다.'); return }
+    if (profileLoading) { setMessage('학생 정보를 확인하는 중입니다. 잠시 후 다시 시도해주세요.'); return }
+    if (!profile) { setMessage('회원가입 정보를 먼저 등록해주세요.'); return }
     if (isAdmin) { setMessage('관리자는 정책 제안을 제출할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.'); return }
 
     const title = form.title.trim()
@@ -58,6 +61,11 @@ function Suggestions() {
 
     if (!title || !content || !effect) {
       setMessage('제목, 내용, 기대 효과를 모두 입력해주세요.')
+      return
+    }
+
+    if (title.length > 80 || form.category.length > 20 || content.length > 1000 || effect.length > 500) {
+      setMessage('제목 80자, 분야 20자, 내용 1000자, 기대 효과 500자 이내로 입력해주세요.')
       return
     }
 
@@ -74,7 +82,7 @@ function Suggestions() {
     const author: PolicySuggestionAuthor = {
       suggestionId: suggestionRef.id,
       authorEmail: user.email ?? '',
-      authorName: profile?.name || user.displayName || '학생',
+      authorName: profile.name,
     }
 
     try {
@@ -99,9 +107,9 @@ function Suggestions() {
           <article id="suggestion-form" className="design-card suggestion-form">
             <h2><Icon name="pen" />정책 제안 작성</h2>
             {message && <p className="success-message">{message}</p>}
-            {!user ? <><p>로그인 후 정책 제안을 제출할 수 있습니다.</p><button className="design-primary" type="button" onClick={loginWithGoogle}>Google로 로그인</button></> : isAdmin ? <p>관리자는 정책 제안을 제출할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.</p> : <><label><span>제목</span><input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label><span>분야</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label><span>내용</span><textarea rows={5} value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><label><span>기대 효과</span><textarea rows={3} value={form.effect} onChange={(event) => setForm({ ...form, effect: event.target.value })} /></label><label className="select-pill"><input type="checkbox" checked={form.isAnonymous} onChange={(event) => setForm({ ...form, isAnonymous: event.target.checked })} /> 공개 목록에서 익명 표시</label><button className="design-primary" type="button" onClick={submitSuggestion}>정책 제안 제출</button></>}
+            {!user ? <><p>로그인 후 정책 제안을 제출할 수 있습니다.</p><button className="design-primary" type="button" onClick={loginWithGoogle}>Google로 로그인</button></> : isAdmin ? <p>관리자는 정책 제안을 제출할 수 없습니다. 관리자 페이지에서 조회만 가능합니다.</p> : !profile ? <><p>학생 정보 등록 후 정책 제안을 제출할 수 있습니다.</p><Link className="design-primary" to="/register">회원가입 하러 가기</Link></> : <><label><span>제목</span><input maxLength={80} value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} /></label><label><span>분야</span><select value={form.category} onChange={(event) => setForm({ ...form, category: event.target.value })}>{categories.map((category) => <option key={category}>{category}</option>)}</select></label><label><span>내용</span><textarea maxLength={1000} rows={5} value={form.content} onChange={(event) => setForm({ ...form, content: event.target.value })} /></label><label><span>기대 효과</span><textarea maxLength={500} rows={3} value={form.effect} onChange={(event) => setForm({ ...form, effect: event.target.value })} /></label><label className="select-pill"><input type="checkbox" checked={form.isAnonymous} onChange={(event) => setForm({ ...form, isAnonymous: event.target.checked })} /> 공개 목록에서 익명 표시</label><button className="design-primary" type="button" onClick={submitSuggestion}>정책 제안 제출</button></>}
           </article>
-          <article className="design-card recent-table" id="recent-suggestions"><div className="design-title"><h2>최근 제안</h2><a href="#recent-suggestions">전체 보기</a></div><table><tbody>{visibleSuggestions.length === 0 ? <tr><td>등록된 정책 제안이 없습니다.</td></tr> : visibleSuggestions.map((item) => { const author = suggestionAuthors.find((authorItem) => authorItem.suggestionId === item.id); return <tr key={item.id}><td>{item.category}</td><td>{item.title}</td><td>{isAdmin ? author?.authorName ?? '작성자 미상' : item.isAnonymous ? '익명' : '학생'}</td><td>{formatDate(item.createdAt)}</td></tr> })}</tbody></table></article>
+          <article className="design-card recent-table" id="recent-suggestions"><div className="design-title"><h2>최근 제안</h2><a href="#recent-suggestions">전체 보기</a></div><table><caption>최근 정책 제안 목록</caption><thead><tr><th scope="col">분야</th><th scope="col">제목</th><th scope="col">작성자</th><th scope="col">등록일</th></tr></thead><tbody>{visibleSuggestions.length === 0 ? <tr><td colSpan={4}>등록된 정책 제안이 없습니다.</td></tr> : visibleSuggestions.map((item) => { const author = suggestionAuthors.find((authorItem) => authorItem.suggestionId === item.id); return <tr key={item.id}><td>{item.category}</td><td>{item.title}</td><td>{isAdmin ? author?.authorName ?? '작성자 미상' : item.isAnonymous ? '익명' : '학생'}</td><td>{formatDate(item.createdAt)}</td></tr> })}</tbody></table></article>
         </div>
         <aside><article className="design-card guide-card" id="suggestion-guide"><h2>제안 가이드</h2>{guides.map((item, index) => <p key={item}><span>{index + 1}</span><strong>{item}</strong><small>학생회가 빠르게 이해할 수 있도록 작성해주세요.</small></p>)}</article><article className="design-card popular-card" id="popular-suggestions"><div className="design-title"><h2>분야</h2><a href="#suggestion-form">제안하기</a></div><div className="chip-row">{categories.map((category) => <span className="select-pill" key={category}>{category}</span>)}</div></article></aside>
       </section>

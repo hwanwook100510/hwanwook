@@ -148,6 +148,11 @@ function Admin() {
     if (!current) return
 
     const nextProfile = { ...current, [field]: value }
+    if (!nextProfile.name.trim() || nextProfile.name.trim().length > 20 || !/^\d{1,2}$/.test(nextProfile.classNumber) || !/^\d{1,2}$/.test(nextProfile.number)) {
+      setMessage('이름은 1~20자, 반과 번호는 1~2자리 숫자로 입력해주세요.')
+      return
+    }
+
     try {
       await setDoc(doc(db!, 'studentProfiles', email), nextProfile, { merge: true })
       setVisibleProfiles(visibleProfiles.map((profile) => profile.email === email ? nextProfile : profile))
@@ -267,13 +272,24 @@ function Admin() {
   const closeElection = async () => {
     if (!db) { setMessage('DB에 연결할 수 없어 투표를 종료할 수 없습니다.'); return }
 
-    const counts = voteRecords.reduce<Record<string, number>>((acc, vote) => {
+    const voteSnapshot = await getDocs(collection(db, 'voteRecords'))
+    const latestVoteRecords = voteSnapshot.docs.map((item) => item.data() as VoteRecord)
+    const counts = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
       const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
       acc[key] = (acc[key] ?? 0) + 1
       return acc
     }, {})
-    const totalVotes = voteRecords.length
-    const percentages = Object.fromEntries(Object.entries(counts).map(([key, count]) => [key, totalVotes === 0 ? 0 : (count / totalVotes) * 100]))
+    const targetTotals = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
+      acc[vote.target] = (acc[vote.target] ?? 0) + 1
+      return acc
+    }, {})
+    const totalVotes = latestVoteRecords.length
+    const percentages = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
+      const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
+      const targetTotal = targetTotals[vote.target] ?? 0
+      acc[key] = targetTotal === 0 ? 0 : ((counts[key] ?? 0) / targetTotal) * 100
+      return acc
+    }, {})
     const maxCandidateVotes = Math.max(0, ...electionCandidates.map((candidate) => counts[candidate] ?? 0))
     const winners = maxCandidateVotes === 0 ? [] : electionCandidates.filter((candidate) => (counts[candidate] ?? 0) === maxCandidateVotes)
     const result: ElectionResult = {
@@ -291,6 +307,7 @@ function Admin() {
         setDoc(doc(db, 'electionSettings', 'current'), { isClosed: true, closedAt: serverTimestamp() }),
         setDoc(doc(db, 'electionResults', 'current'), result),
       ])
+      setVoteRecords(latestVoteRecords)
       setMessage('투표를 종료하고 결과를 공개했습니다.')
     } catch {
       setMessage('투표 종료 저장에 실패했습니다. 잠시 후 다시 시도해주세요.')
@@ -406,7 +423,7 @@ function Admin() {
         </div>
       </section>
       <section className="content-section">
-        <SectionHeader title="투표 기록 조회" description="저장된 투표 기록은 관리자만 확인할 수 있습니다." />
+        <SectionHeader title="투표 기록 조회" description="저장된 투표 기록은 관리자만 확인할 수 있으며, 종료 시 안건별 득표율을 계산해 공개합니다." />
         <button className="primary-button" type="button" onClick={closeElection}>투표 종료 및 결과 공개</button>
         <div className="admin-list">
           {voteRecords.length === 0 ? <p>저장된 투표 기록이 없습니다.</p> : voteRecords.map((vote) => (

@@ -55,6 +55,7 @@ export type ClubApplication = {
   firstChoice: string
   secondChoice: string
   thirdChoice: string
+  questionAnswers?: string[]
   createdAt: FirestoreTime
   locked?: boolean
   unlockedByAdmin?: boolean
