@@ -156,6 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch((redirectError) => {
           window.sessionStorage.removeItem(redirectStartedKey)
           const code = firebaseErrorCode(redirectError)
+          if (code.includes('internal-error')) {
+            return
+          }
+
           if (mounted && !activeAuth.currentUser) setError(`Google 로그인 결과를 처리하지 못했습니다.${code ? ` (${code})` : ''}`)
         })
     }
