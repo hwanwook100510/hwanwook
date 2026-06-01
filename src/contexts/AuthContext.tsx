@@ -147,16 +147,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
 
-    void getRedirectResult(activeAuth)
-      .then((result) => {
-        window.sessionStorage.removeItem(redirectStartedKey)
-        if (result?.user) void applyUser(result.user)
-      })
-      .catch((redirectError) => {
-        window.sessionStorage.removeItem(redirectStartedKey)
-        const code = typeof redirectError === 'object' && redirectError && 'code' in redirectError ? ` (${String(redirectError.code)})` : ''
-        if (mounted) setError(`Google 로그인 결과를 처리하지 못했습니다.${code}`)
-      })
+    if (window.sessionStorage.getItem(redirectStartedKey) === 'true') {
+      void getRedirectResult(activeAuth)
+        .then((result) => {
+          window.sessionStorage.removeItem(redirectStartedKey)
+          if (result?.user) void applyUser(result.user)
+        })
+        .catch((redirectError) => {
+          window.sessionStorage.removeItem(redirectStartedKey)
+          const code = firebaseErrorCode(redirectError)
+          if (mounted && !activeAuth.currentUser) setError(`Google 로그인 결과를 처리하지 못했습니다.${code ? ` (${code})` : ''}`)
+        })
+    }
 
     const unsubscribe = onAuthStateChanged(activeAuth, async (currentUser) => {
       await applyUser(currentUser)
