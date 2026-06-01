@@ -4,7 +4,6 @@ import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPers
 import type { User } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
-import { externalLoginEmails } from '../config'
 import { normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
@@ -16,7 +15,12 @@ const redirectStartedKey = 'dimigo-google-redirect-started'
 
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
-  return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN) || externalLoginEmails.includes(normalizedEmail ?? ''))
+  return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN))
+}
+
+type AuthStatus = {
+  isAdmin?: boolean
+  isAllowedLogin?: boolean
 }
 
 function firebaseErrorCode(error: unknown) {
@@ -60,18 +64,18 @@ async function isSuspendedUser(user: User | null) {
   return snapshot.exists() && snapshot.data().enabled === true
 }
 
-async function loadAdminStatus(user: User | null) {
+async function loadAuthStatus(user: User | null): Promise<AuthStatus> {
   if (!user) {
-    return false
+    return {}
   }
 
   try {
     const token = await user.getIdToken()
     const response = await fetch('/api/auth/status', { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-    const data = await response.json() as { isAdmin?: boolean }
-    return response.ok && data.isAdmin === true
+    const data = await response.json() as AuthStatus
+    return response.ok ? data : {}
   } catch {
-    return false
+    return {}
   }
 }
 
@@ -93,9 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let mounted = true
 
     async function applyUser(currentUser: User | null) {
-      const currentIsAdmin = await loadAdminStatus(currentUser)
+      const currentStatus = await loadAuthStatus(currentUser)
+      const currentIsAdmin = currentStatus.isAdmin === true
 
-      if (currentUser && !currentIsAdmin && !isAllowedEmail(currentUser.email)) {
+      if (currentUser && currentStatus.isAllowedLogin !== true && !isAllowedEmail(currentUser.email)) {
         if (!mounted) return
         setUser(null)
         setIsAdmin(false)
@@ -159,9 +164,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await setPersistence(auth, browserLocalPersistence)
       const result = await signInWithPopup(auth, googleProvider)
 
-      const resultIsAdmin = await loadAdminStatus(result.user)
+      const resultStatus = await loadAuthStatus(result.user)
+      const resultIsAdmin = resultStatus.isAdmin === true
 
-      if (!resultIsAdmin && !isAllowedEmail(result.user.email)) {
+      if (resultStatus.isAllowedLogin !== true && !isAllowedEmail(result.user.email)) {
         setUser(null)
         setIsAdmin(false)
         setError(`${DOMAIN_ERROR} 선택한 계정: ${result.user.email ?? '확인 불가'}`)
