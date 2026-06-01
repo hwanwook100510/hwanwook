@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signInAnonymously, signInWithRedirect, signOut } from 'firebase/auth'
+import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signInAnonymously, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
@@ -23,6 +23,28 @@ function hasAcceptedAdminCode() {
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
   return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN) || ALLOWED_EMAILS.includes(normalizedEmail ?? ''))
+}
+
+function firebaseErrorCode(error: unknown) {
+  return typeof error === 'object' && error && 'code' in error ? String(error.code) : ''
+}
+
+function googleLoginErrorMessage(error: unknown) {
+  const code = firebaseErrorCode(error)
+
+  if (code.includes('unauthorized-domain')) {
+    return '현재 도메인이 Firebase 승인 도메인에 없습니다. Authentication > Settings > Authorized domains에 hwanwook.vercel.app을 추가해주세요.'
+  }
+
+  if (code.includes('operation-not-allowed')) {
+    return 'Firebase Authentication에서 Google 로그인이 꺼져 있습니다. Sign-in method에서 Google을 켜주세요.'
+  }
+
+  if (code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request')) {
+    return ''
+  }
+
+  return `Google 로그인 중 오류가 발생했습니다.${code ? ` (${code})` : ''}`
 }
 
 async function isSuspendedEmail(email: string | null) {
@@ -146,13 +168,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError('')
     try {
       await setPersistence(auth, browserLocalPersistence)
-      window.sessionStorage.setItem(redirectStartedKey, 'true')
-      await signInWithRedirect(auth, googleProvider)
-    } catch {
-      window.sessionStorage.removeItem(redirectStartedKey)
-      setError('Google 로그인 페이지로 이동하지 못했습니다. Firebase 승인 도메인과 브라우저 설정을 확인해주세요.')
+      const result = await signInWithPopup(auth, googleProvider)
+
+      if (!adminCodeAccepted && !isAllowedEmail(result.user.email)) {
+        setUser(null)
+        setIsAdmin(false)
+        setError(`${DOMAIN_ERROR} 선택한 계정: ${result.user.email ?? '확인 불가'}`)
+        await signOut(auth)
+        return
+      }
+
+      if (await isSuspendedEmail(result.user.email)) {
+        setUser(null)
+        setIsAdmin(false)
+        setError('정지된 계정입니다. 관리자에게 문의해주세요.')
+        await signOut(auth)
+        return
+      }
+
+      setUser(result.user)
+      setIsAdmin(await loadAdminStatus(result.user, adminCodeAccepted))
+    } catch (error) {
+      const fallbackMessage = googleLoginErrorMessage(error)
+
+      if (fallbackMessage) {
+        setError(fallbackMessage)
+        return
+      }
+
+      try {
+        await setPersistence(auth, browserLocalPersistence)
+        window.sessionStorage.setItem(redirectStartedKey, 'true')
+        await signInWithRedirect(auth, googleProvider)
+      } catch (redirectError) {
+        window.sessionStorage.removeItem(redirectStartedKey)
+        setError(googleLoginErrorMessage(redirectError) || 'Google 로그인 페이지로 이동하지 못했습니다. Firebase 승인 도메인과 브라우저 설정을 확인해주세요.')
+      }
     }
-  }, [])
+  }, [adminCodeAccepted])
 
   const logout = useCallback(async () => {
     setError('')
