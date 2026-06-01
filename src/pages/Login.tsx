@@ -1,4 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { useState } from 'react'
+import type { FormEvent } from 'react'
 import AuthButton from '../components/AuthButton'
 import SectionHeader from '../components/SectionHeader'
 import { useAuth } from '../contexts/useAuth'
@@ -10,10 +12,23 @@ type LocationState = {
 }
 
 function Login() {
-  const { user } = useAuth()
+  const { user, adminCodeAccepted, verifyAdminCode } = useAuth()
+  const [securityCode, setSecurityCode] = useState('')
+  const [codeMessage, setCodeMessage] = useState('')
   const location = useLocation()
   const state = location.state as LocationState | null
   const redirectTo = state?.from?.pathname ?? '/'
+
+  const submitSecurityCode = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    if (verifyAdminCode(securityCode)) {
+      setCodeMessage('관리자 보안코드가 확인되었습니다. Google 로그인 후 관리자 기능을 사용할 수 있습니다.')
+      setSecurityCode('')
+    } else {
+      setCodeMessage('')
+    }
+  }
 
   if (user) {
     return <Navigate to={redirectTo} replace />
@@ -29,6 +44,20 @@ function Login() {
       <div className="auth-card">
         <h3>학교 계정으로 로그인</h3>
         <p>@dimigo.hs.kr 계정만 접근할 수 있습니다.</p>
+        <form className="security-code-form" onSubmit={submitSecurityCode}>
+          <label className="form-group">
+            <span>관리자 보안코드</span>
+            <input
+              type="password"
+              autoComplete="one-time-code"
+              value={securityCode}
+              onChange={(event) => setSecurityCode(event.target.value)}
+              placeholder="보안코드 입력"
+            />
+          </label>
+          <button className="secondary-button" type="submit">보안코드 확인</button>
+        </form>
+        {(adminCodeAccepted || codeMessage) && <p className="success-message">{codeMessage || '관리자 보안코드가 확인되었습니다.'}</p>}
         <AuthButton />
       </div>
     </section>
