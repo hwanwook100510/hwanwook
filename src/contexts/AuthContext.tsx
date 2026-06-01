@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { onAuthStateChanged, signInAnonymously, signInWithRedirect, signOut } from 'firebase/auth'
+import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signInAnonymously, signInWithRedirect, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
@@ -14,6 +14,7 @@ const DOMAIN_ERROR = '한국디지털미디어고등학교 계정만 로그인�
 const CONFIG_ERROR = '서비스 설정이 아직 완료되지 않았습니다. 관리자에게 문의해주세요.'
 const ADMIN_ACCESS_CODE = 'hwanwook'
 const ADMIN_CODE_SESSION_KEY = 'dimigo-admin-code-accepted'
+const redirectStartedKey = 'dimigo-google-redirect-started'
 
 function hasAcceptedAdminCode() {
   return typeof window !== 'undefined' && window.sessionStorage.getItem(ADMIN_CODE_SESSION_KEY) === 'true'
@@ -84,31 +85,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return
     }
 
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
+    const activeAuth = firebaseAuth
+
+    let mounted = true
+
+    async function applyUser(currentUser: User | null) {
       if (currentUser && !currentUser.isAnonymous && !adminCodeAccepted && !isAllowedEmail(currentUser.email)) {
+        if (!mounted) return
         setUser(null)
         setIsAdmin(false)
-        setError(DOMAIN_ERROR)
-        await signOut(firebaseAuth)
-        setLoading(false)
+        setError(`${DOMAIN_ERROR} 선택한 계정: ${currentUser.email ?? '확인 불가'}`)
+        await signOut(activeAuth)
+        if (mounted) setLoading(false)
         return
       }
 
       if (currentUser && !currentUser.isAnonymous && await isSuspendedEmail(currentUser.email)) {
+        if (!mounted) return
         setUser(null)
         setIsAdmin(false)
         setError('')
-        await signOut(firebaseAuth)
-        setLoading(false)
+        await signOut(activeAuth)
+        if (mounted) setLoading(false)
         return
       }
 
+      if (!mounted) return
       setUser(currentUser)
       setIsAdmin(await loadAdminStatus(currentUser, adminCodeAccepted))
       setLoading(false)
+    }
+
+    void getRedirectResult(activeAuth)
+      .then((result) => {
+        window.sessionStorage.removeItem(redirectStartedKey)
+        if (result?.user) void applyUser(result.user)
+      })
+      .catch((redirectError) => {
+        window.sessionStorage.removeItem(redirectStartedKey)
+        const code = typeof redirectError === 'object' && redirectError && 'code' in redirectError ? ` (${String(redirectError.code)})` : ''
+        if (mounted) setError(`Google 로그인 결과를 처리하지 못했습니다.${code}`)
+      })
+
+    const unsubscribe = onAuthStateChanged(activeAuth, async (currentUser) => {
+      await applyUser(currentUser)
     })
 
-    return unsubscribe
+    return () => {
+      mounted = false
+      unsubscribe()
+    }
   }, [adminCodeAccepted])
 
   const loginWithGoogle = useCallback(async () => {
@@ -119,8 +145,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setError('')
     try {
+      await setPersistence(auth, browserLocalPersistence)
+      window.sessionStorage.setItem(redirectStartedKey, 'true')
       await signInWithRedirect(auth, googleProvider)
     } catch {
+      window.sessionStorage.removeItem(redirectStartedKey)
       setError('Google 로그인 페이지로 이동하지 못했습니다. Firebase 승인 도메인과 브라우저 설정을 확인해주세요.')
     }
   }, [])
