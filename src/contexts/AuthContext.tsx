@@ -4,6 +4,7 @@ import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPers
 import type { User } from 'firebase/auth'
 import { doc, getDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
+import { externalLoginEmails } from '../config'
 import { normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
@@ -15,7 +16,7 @@ const redirectStartedKey = 'dimigo-google-redirect-started'
 
 function isAllowedEmail(email: string | null) {
   const normalizedEmail = normalizeEmail(email)
-  return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN))
+  return Boolean(normalizedEmail?.endsWith(DIMIGO_DOMAIN) || externalLoginEmails.includes(normalizedEmail ?? ''))
 }
 
 function firebaseErrorCode(error: unknown) {

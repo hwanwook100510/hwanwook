@@ -9,3 +9,8 @@ export function normalizeAdminRoute(value: string | undefined) {
 }
 
 export const adminRoute = normalizeAdminRoute(import.meta.env.VITE_ADMIN_ROUTE)
+
+export const externalLoginEmails = (import.meta.env.VITE_EXTERNAL_LOGIN_EMAILS ?? '')
+  .split(',')
+  .map((email: string) => email.trim().toLowerCase())
+  .filter(Boolean)
