@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 
 function AuthButton() {
-  const { user, isAdmin, loading, error, loginWithGoogle, logout } = useAuth()
+  const { user, isAdmin, loading, error, adminCodeAccepted, loginWithGoogle, logout } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLogin = async () => {
@@ -21,14 +21,17 @@ function AuthButton() {
   }
 
   if (user) {
+    const displayName = user.displayName ?? (adminCodeAccepted ? '관리자 세션' : '나')
+    const displayEmail = user.email ?? (adminCodeAccepted ? '보안코드 인증' : '')
+
     return (
       <div className="auth-profile">
         <Link className="auth-avatar-link" to="/mypage" aria-label="내 정보 보기">
-          {user.photoURL ? <img src={user.photoURL} alt="프로필" /> : <span>{user.displayName?.slice(0, 1) ?? '나'}</span>}
+          {user.photoURL ? <img src={user.photoURL} alt="프로필" /> : <span>{displayName.slice(0, 1)}</span>}
         </Link>
         <div>
-          <strong>{user.displayName}</strong>
-          <small>{user.email}</small>
+          <strong>{displayName}</strong>
+          <small>{displayEmail}</small>
         </div>
         <Link className="profile-link" to="/mypage">마이페이지</Link>
         {isAdmin && <Link className="profile-link" to="/admin">관리자</Link>}

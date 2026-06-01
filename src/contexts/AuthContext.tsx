@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth'
+import { onAuthStateChanged, signInAnonymously, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
 import { ADMIN_EMAILS, isAdminEmail, normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
@@ -34,12 +34,31 @@ async function isSuspendedEmail(email: string | null) {
   return snapshot.exists()
 }
 
-async function loadAdminStatus(email: string | null, adminCodeAccepted = false) {
+async function hasAdminCodeSession(uid: string | null) {
+  if (!db || !uid) {
+    return false
+  }
+
+  try {
+    const snapshot = await getDoc(doc(db, 'adminAccessSessions', uid))
+    return snapshot.exists()
+  } catch {
+    return false
+  }
+}
+
+async function loadAdminStatus(user: User | null, adminCodeAccepted = false) {
+  const email = user?.email ?? null
+
+  if (adminCodeAccepted && await hasAdminCodeSession(user?.uid ?? null)) {
+    return true
+  }
+
   if (!db || !email) {
     return adminCodeAccepted
   }
 
-  if (adminCodeAccepted || isAdminEmail(email)) {
+  if (isAdminEmail(email)) {
     return true
   }
 
@@ -66,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
-      if (currentUser && !isAllowedEmail(currentUser.email)) {
+      if (currentUser && !adminCodeAccepted && !isAllowedEmail(currentUser.email)) {
         setUser(null)
         setIsAdmin(false)
         setError(DOMAIN_ERROR)
@@ -85,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser(currentUser)
-      setIsAdmin(await loadAdminStatus(currentUser?.email ?? null, adminCodeAccepted))
+      setIsAdmin(await loadAdminStatus(currentUser, adminCodeAccepted))
       setLoading(false)
     })
 
@@ -99,9 +118,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setError('')
-    const result = await signInWithPopup(auth, googleProvider)
+    let result
 
-    if (!isAllowedEmail(result.user.email)) {
+    try {
+      result = await signInWithPopup(auth, googleProvider)
+    } catch (loginError) {
+      const code = typeof loginError === 'object' && loginError && 'code' in loginError ? String(loginError.code) : ''
+
+      if (code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request')) {
+        await signInWithRedirect(auth, googleProvider)
+        return
+      }
+
+      setError('로그인 창을 열지 못했습니다. 브라우저 팝업 허용 후 다시 시도해주세요.')
+      return
+    }
+
+    if (!adminCodeAccepted && !isAllowedEmail(result.user.email)) {
       setUser(null)
       setIsAdmin(false)
       setError(DOMAIN_ERROR)
@@ -118,7 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setUser(result.user)
-    setIsAdmin(await loadAdminStatus(result.user.email, adminCodeAccepted))
+    setIsAdmin(await loadAdminStatus(result.user, adminCodeAccepted))
   }, [adminCodeAccepted])
 
   const logout = useCallback(async () => {
@@ -137,18 +170,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(false)
   }, [])
 
-  const verifyAdminCode = useCallback((code: string) => {
+  const verifyAdminCode = useCallback(async (code: string) => {
     if (code.trim() !== ADMIN_ACCESS_CODE) {
       setError('보안코드가 올바르지 않습니다.')
       return false
     }
 
+    if (!auth || !db) {
+      setError(CONFIG_ERROR)
+      return false
+    }
+
+    const currentUser = auth.currentUser ?? (await signInAnonymously(auth)).user
+
+    await setDoc(doc(db, 'adminAccessSessions', currentUser.uid), {
+      enabled: true,
+      accessCode: ADMIN_ACCESS_CODE,
+      createdAt: serverTimestamp(),
+    })
+
     window.sessionStorage.setItem(ADMIN_CODE_SESSION_KEY, 'true')
     setAdminCodeAccepted(true)
     setError('')
-    setIsAdmin(Boolean(user))
+    setUser(currentUser)
+    setIsAdmin(true)
     return true
-  }, [user])
+  }, [])
 
   const value = useMemo<AuthContextValue>(() => ({
     user,

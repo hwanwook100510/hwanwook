@@ -264,6 +264,7 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
 .auth-card { width: min(540px, 100%); padding: 26px; box-shadow: var(--shadow-subtle); }
 .security-code-form { display: grid; gap: 12px; margin: 18px 0; }
 .security-code-form .secondary-button { width: fit-content; }
+.auth-error-message { margin: 0; color: var(--danger); font-size: 0.9rem; font-weight: 800; }
 .route-loading { margin: 34px 0; }
 
 .mini-card, .suggestion-card, .student-summary, .choice-selector { border: 1px solid var(--line); background: #fffafd; }

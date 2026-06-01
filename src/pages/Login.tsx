@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import AuthButton from '../components/AuthButton'
@@ -16,15 +16,17 @@ function Login() {
   const [securityCode, setSecurityCode] = useState('')
   const [codeMessage, setCodeMessage] = useState('')
   const location = useLocation()
+  const navigate = useNavigate()
   const state = location.state as LocationState | null
   const redirectTo = state?.from?.pathname ?? '/'
 
-  const submitSecurityCode = (event: FormEvent<HTMLFormElement>) => {
+  const submitSecurityCode = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (verifyAdminCode(securityCode)) {
-      setCodeMessage('관리자 보안코드가 확인되었습니다. Google 로그인 후 관리자 기능을 사용할 수 있습니다.')
+    if (await verifyAdminCode(securityCode)) {
+      setCodeMessage('관리자 보안코드가 확인되었습니다. 관리자 페이지로 이동합니다.')
       setSecurityCode('')
+      navigate('/admin', { replace: true })
     } else {
       setCodeMessage('')
     }
@@ -43,7 +45,7 @@ function Login() {
       />
       <div className="auth-card">
         <h3>학교 계정으로 로그인</h3>
-        <p>@dimigo.hs.kr 계정만 접근할 수 있습니다.</p>
+        <p>학생 기능은 @dimigo.hs.kr 계정으로 로그인하고, 관리자는 보안코드로 접속할 수 있습니다.</p>
         <form className="security-code-form" onSubmit={submitSecurityCode}>
           <label className="form-group">
             <span>관리자 보안코드</span>

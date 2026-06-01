@@ -9,7 +9,7 @@ export type AuthContextValue = {
   adminCodeAccepted: boolean
   loginWithGoogle: () => Promise<void>
   logout: () => Promise<void>
-  verifyAdminCode: (code: string) => boolean
+  verifyAdminCode: (code: string) => Promise<boolean>
   clearError: () => void
 }
 

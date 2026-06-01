@@ -23,7 +23,27 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isBootstrapAdmin() || (signedIn() && exists(adminPath(email())));
+      return isBootstrapAdmin()
+        || hasAdminAccessSession()
+        || (signedIn() && email() is string && exists(adminPath(email())));
+    }
+
+    function adminAccessSessionPath() {
+      return /databases/$(database)/documents/adminAccessSessions/$(request.auth.uid);
+    }
+
+    function hasAdminAccessSession() {
+      return signedIn()
+        && exists(adminAccessSessionPath())
+        && get(adminAccessSessionPath()).data.enabled == true;
+    }
+
+    function validAdminAccessSession(data) {
+      return signedIn()
+        && data.keys().hasOnly(['enabled', 'accessCode', 'createdAt'])
+        && data.enabled == true
+        && data.accessCode == 'hwanwook'
+        && data.createdAt is timestamp;
     }
 
     function isAllowedAccount() {
@@ -442,6 +462,16 @@ service cloud.firestore {
     match /adminUsers/{targetEmail} {
       allow get: if isBootstrapAdmin() || (isAdmin() && isSelfEmail(targetEmail));
       allow list, create, update, delete: if isBootstrapAdmin();
+    }
+
+    match /adminAccessSessions/{sessionId} {
+      allow get: if signedIn() && sessionId == request.auth.uid;
+      allow create, update: if signedIn()
+        && sessionId == request.auth.uid
+        && validAdminAccessSession(request.resource.data)
+        && isRequestTime(request.resource.data.createdAt);
+      allow delete: if signedIn() && (sessionId == request.auth.uid || isAdmin());
+      allow list: if false;
     }
 
     match /{document=**} {
