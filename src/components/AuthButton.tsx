@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/useAuth'
 
 function AuthButton() {
-  const { user, isAdmin, loading, error, adminCodeAccepted, loginWithGoogle, logout } = useAuth()
+  const { user, isAdmin, loading, error, loginWithGoogle, logout } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const handleLogin = async () => {
@@ -21,8 +21,8 @@ function AuthButton() {
   }
 
   if (user) {
-    const displayName = user.displayName ?? (adminCodeAccepted ? '관리자 세션' : '나')
-    const displayEmail = user.email ?? (adminCodeAccepted ? '보안코드 인증' : '')
+    const displayName = user.displayName ?? '나'
+    const displayEmail = user.email ?? ''
 
     return (
       <div className="auth-profile">

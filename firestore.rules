@@ -22,32 +22,8 @@ service cloud.firestore {
       return /databases/$(database)/documents/adminUsers/$(targetEmail);
     }
 
-    function isBootstrapAdmin() {
-      return hasEmail() && email() in ['hwanwook100510@gmail.com'];
-    }
-
     function isAdmin() {
-      return isBootstrapAdmin()
-        || hasAdminAccessSession()
-        || (hasEmail() && exists(adminPath(email())));
-    }
-
-    function adminAccessSessionPath() {
-      return /databases/$(database)/documents/adminAccessSessions/$(request.auth.uid);
-    }
-
-    function hasAdminAccessSession() {
-      return signedIn()
-        && exists(adminAccessSessionPath())
-        && get(adminAccessSessionPath()).data.enabled == true;
-    }
-
-    function validAdminAccessSession(data) {
-      return signedIn()
-        && data.keys().hasOnly(['enabled', 'accessCode', 'createdAt'])
-        && data.enabled == true
-        && data.accessCode == 'hwanwook'
-        && data.createdAt is timestamp;
+      return hasEmail() && exists(adminPath(email()));
     }
 
     function isAllowedAccount() {
@@ -337,7 +313,7 @@ service cloud.firestore {
         && data.suspendedAt is timestamp
         && data.suspendedBy is string
         && data.email == targetEmail
-        && (data.suspendedBy == email() || (hasAdminAccessSession() && data.suspendedBy == 'admin'))
+        && data.suspendedBy == email()
         && isRequestTime(data.suspendedAt);
     }
 
@@ -462,18 +438,8 @@ service cloud.firestore {
     }
 
     match /adminUsers/{targetEmail} {
-      allow get: if isBootstrapAdmin() || (isAdmin() && isSelfEmail(targetEmail));
-      allow list, create, update, delete: if isBootstrapAdmin();
-    }
-
-    match /adminAccessSessions/{sessionId} {
-      allow get: if signedIn() && sessionId == request.auth.uid;
-      allow create, update: if signedIn()
-        && sessionId == request.auth.uid
-        && validAdminAccessSession(request.resource.data)
-        && isRequestTime(request.resource.data.createdAt);
-      allow delete: if signedIn() && (sessionId == request.auth.uid || isAdmin());
-      allow list: if false;
+      allow get: if isAdmin() && isSelfEmail(targetEmail);
+      allow list, create, update, delete: if false;
     }
 
     match /{document=**} {

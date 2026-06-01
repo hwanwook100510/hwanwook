@@ -115,7 +115,7 @@ function Admin() {
         setPledges(pledgeSnapshot.docs.map((item) => item.data() as PledgeProgress))
       } catch (error) {
         const detail = error instanceof Error ? ` 막힌 위치: ${error.message}` : ''
-        setMessage(`DB 데이터를 불러오지 못했습니다. Firestore Rules와 Anonymous 로그인을 확인해주세요.${detail}`)
+        setMessage(`DB 데이터를 불러오지 못했습니다. Firestore Rules와 관리자 권한을 확인해주세요.${detail}`)
       } finally {
         setLoadingData(false)
       }
