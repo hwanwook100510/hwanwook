@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import { onAuthStateChanged, signInAnonymously, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
+import { onAuthStateChanged, signInAnonymously, signInWithRedirect, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
@@ -118,41 +118,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setError('')
-    let result
-
     try {
-      result = await signInWithPopup(auth, googleProvider)
-    } catch (loginError) {
-      const code = typeof loginError === 'object' && loginError && 'code' in loginError ? String(loginError.code) : ''
-
-      if (code.includes('popup-blocked') || code.includes('popup-closed') || code.includes('cancelled-popup-request')) {
-        await signInWithRedirect(auth, googleProvider)
-        return
-      }
-
-      setError('로그인 창을 열지 못했습니다. 브라우저 팝업 허용 후 다시 시도해주세요.')
-      return
+      await signInWithRedirect(auth, googleProvider)
+    } catch {
+      setError('Google 로그인 페이지로 이동하지 못했습니다. Firebase 승인 도메인과 브라우저 설정을 확인해주세요.')
     }
-
-    if (!adminCodeAccepted && !isAllowedEmail(result.user.email)) {
-      setUser(null)
-      setIsAdmin(false)
-      setError(DOMAIN_ERROR)
-      await signOut(auth)
-      return
-    }
-
-    if (await isSuspendedEmail(result.user.email)) {
-      setUser(null)
-      setIsAdmin(false)
-      setError('')
-      await signOut(auth)
-      return
-    }
-
-    setUser(result.user)
-    setIsAdmin(await loadAdminStatus(result.user, adminCodeAccepted))
-  }, [adminCodeAccepted])
+  }, [])
 
   const logout = useCallback(async () => {
     setError('')
