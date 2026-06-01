@@ -593,7 +593,9 @@ main:has(.design-page) { width: 100%; }
 .chip-row button.active { color: #f72e7d; background: #fff0f7; border-color: #ff9cc5; }
 .recent-table { overflow-x: auto; }
 .recent-table table { width: 100%; min-width: 34rem; border-collapse: collapse; }
-.recent-table td { padding: 12px; border-bottom: 1px solid #f0e8ec; }
+.recent-table caption { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.recent-table th, .recent-table td { padding: 12px; border-bottom: 1px solid #f0e8ec; text-align: left; }
+.recent-table th { color: var(--navy); background: #fff7fb; font-size: .84rem; font-weight: 950; }
 .recent-empty-row td { height: 56px; }
 .recent-table span, .popular-card b { border-radius: 999px; padding: 5px 10px; color: #f72e7d; background: #ffe8f2; }
 .guide-card p, .popular-card p, .vote-side p, .vote-side div, .update-card p, .opinion-card p, .completed-card p, .apply-info p { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .35rem .8rem; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0e8ec; }
@@ -789,7 +791,15 @@ main:has(.design-page) { width: 100%; }
   .vote-item button, .pledge-row button, .table-card button, .table-card a, .club-apply-card button { width: 100%; }
   .vote-result p { grid-template-columns: max-content minmax(0, 1fr) max-content; }
   .recent-table table { min-width: 0; }
+  .recent-table thead { display: none; }
   .recent-table table, .recent-table tbody, .recent-table tr, .recent-table td { display: block; width: 100%; }
   .recent-table tr { padding: 10px 0; border-bottom: 1px solid #f0e8ec; }
-  .recent-table td { padding: 5px 0; border-bottom: 0; }
+  .recent-table td { display: grid; grid-template-columns: 5rem minmax(0, 1fr); gap: 10px; padding: 5px 0; border-bottom: 0; }
+  .recent-table td::before { color: var(--muted); font-size: .8rem; font-weight: 950; }
+  .recent-table td:nth-child(1)::before { content: '분야'; }
+  .recent-table td:nth-child(2)::before { content: '제목'; }
+  .recent-table td:nth-child(3)::before { content: '작성자'; }
+  .recent-table td:nth-child(4)::before { content: '등록일'; }
+  .recent-table td[colspan] { display: block; }
+  .recent-table td[colspan]::before { content: none; }
 }

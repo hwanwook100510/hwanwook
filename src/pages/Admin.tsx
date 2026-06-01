@@ -15,6 +15,7 @@ const evaluationLabels = [
 ] as const
 const electionTarget = '바른생활부 차장 보궐선거'
 const electionCandidates = ['신의진', '문소연']
+const policyVoteTargets = ['자판기 설치', '전체 잔류일을 활용한 학예제 개최']
 
 function formatTime(value: FirestoreTime) {
   if (typeof value === 'string') return value
@@ -44,6 +45,14 @@ function averageEvaluation(responses: EvaluationResponse[]) {
     ...averages,
     total: (averages.promise + averages.communication + averages.event + averages.reflection) / 4,
   }
+}
+
+function isValidVoteRecord(vote: VoteRecord) {
+  if (vote.target === electionTarget) {
+    return electionCandidates.includes(vote.choice)
+  }
+
+  return policyVoteTargets.includes(vote.target) && (vote.choice === '찬성' || vote.choice === '반대')
 }
 
 function Admin() {
@@ -114,6 +123,11 @@ function Admin() {
   }
 
   const updateAssignment = async (email: string, field: 'club' | 'role', value: string) => {
+    if (field === 'club' && !value) {
+      setMessage('동아리를 선택해주세요.')
+      return
+    }
+
     if (field === 'club' && value && !clubs.some((club) => club.name === value)) {
       setMessage('등록된 동아리만 선택할 수 있습니다.')
       return
@@ -226,8 +240,8 @@ function Admin() {
     const title = pledgeForm.title.trim()
     const description = pledgeForm.description.trim()
 
-    if (!title || !description) {
-      setMessage('공약 제목과 설명을 입력해주세요.')
+    if (!title || !description || title.length > 100 || description.length > 1000) {
+      setMessage('공약 제목은 1~100자, 설명은 1~1000자로 입력해주세요.')
       return
     }
 
@@ -273,7 +287,7 @@ function Admin() {
     if (!db) { setMessage('DB에 연결할 수 없어 투표를 종료할 수 없습니다.'); return }
 
     const voteSnapshot = await getDocs(collection(db, 'voteRecords'))
-    const latestVoteRecords = voteSnapshot.docs.map((item) => item.data() as VoteRecord)
+    const latestVoteRecords = voteSnapshot.docs.map((item) => item.data() as VoteRecord).filter(isValidVoteRecord)
     const counts = latestVoteRecords.reduce<Record<string, number>>((acc, vote) => {
       const key = vote.target === electionTarget ? vote.choice : `${vote.target}:${vote.choice}`
       acc[key] = (acc[key] ?? 0) + 1
@@ -442,8 +456,8 @@ function Admin() {
         <div className="two-column">
           <div className="form-card">
             <h3>{pledgeForm.id ? '공약 수정' : '공약 추가'}</h3>
-            <label><span>제목</span><input value={pledgeForm.title} onChange={(event) => setPledgeForm({ ...pledgeForm, title: event.target.value })} /></label>
-            <label><span>설명</span><textarea rows={4} value={pledgeForm.description} onChange={(event) => setPledgeForm({ ...pledgeForm, description: event.target.value })} /></label>
+            <label><span>제목</span><input maxLength={100} value={pledgeForm.title} onChange={(event) => setPledgeForm({ ...pledgeForm, title: event.target.value })} /></label>
+            <label><span>설명</span><textarea maxLength={1000} rows={4} value={pledgeForm.description} onChange={(event) => setPledgeForm({ ...pledgeForm, description: event.target.value })} /></label>
             <p className="success-message">상태는 모두 선거 중으로 표시됩니다.</p>
             <button className="primary-button" type="button" onClick={savePledge}>저장</button>
             {pledgeForm.id && <button className="secondary-button" type="button" onClick={() => setPledgeForm(emptyPledgeForm)}>취소</button>}

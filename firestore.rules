@@ -115,7 +115,13 @@ service cloud.firestore {
         && data.secondChoice.size() <= 30
         && data.thirdChoice.size() > 0
         && data.thirdChoice.size() <= 30
-        && (!('questionAnswers' in data) || (data.questionAnswers is list && data.questionAnswers.size() <= 3))
+        && (!('questionAnswers' in data) || (
+          data.questionAnswers is list
+          && data.questionAnswers.size() <= 3
+          && (data.questionAnswers.size() < 1 || (data.questionAnswers[0] is string && data.questionAnswers[0].size() <= 1000))
+          && (data.questionAnswers.size() < 2 || (data.questionAnswers[1] is string && data.questionAnswers[1].size() <= 1000))
+          && (data.questionAnswers.size() < 3 || (data.questionAnswers[2] is string && data.questionAnswers[2].size() <= 1000))
+        ))
         && data.firstChoice != data.secondChoice
         && data.firstChoice != data.thirdChoice
         && data.secondChoice != data.thirdChoice;
@@ -259,7 +265,13 @@ service cloud.firestore {
         && data.target.size() <= 80
         && data.choice.size() > 0
         && data.choice.size() <= 80
-        && data.id == email() + '_' + data.target;
+        && data.id == email() + '_' + data.target
+        && validVoteChoice(data.target, data.choice);
+    }
+
+    function validVoteChoice(target, choice) {
+      return ((target in ['자판기 설치', '전체 잔류일을 활용한 학예제 개최']) && choice in ['찬성', '반대'])
+        || (target == '바른생활부 차장 보궐선거' && choice in ['신의진', '문소연']);
     }
 
     function validElectionSetting(data) {

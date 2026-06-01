@@ -51,6 +51,7 @@ function PolicyProgress() {
     return false
   })
   const activeCount = items.length
+  const featuredItems = items.slice(0, 3)
 
   return (
     <div className="design-page progress-design">
@@ -61,7 +62,7 @@ function PolicyProgress() {
           <div className="tab-row">{filters.map((item) => <button className={filter === item ? 'active' : ''} key={item} type="button" onClick={() => setFilter(item)}>{item}</button>)}</div>
           <article className="design-card pledge-table"><h2>주요 공약 진행 현황</h2>{filteredItems.map((item, index) => <div className="pledge-row" key={item.id}><span className="round-icon"><Icon name={['book','vote','wifi','users','check'][index % 5]} /></span><div><strong>{item.title}</strong><p>{item.description}</p></div><div className="step-line"><span className="on">선거 중</span></div><time>최근 업데이트<br />{formatDate(item.updatedAt)}</time></div>)}{filteredItems.length === 0 && <p className="empty-message">해당 상태의 공약이 없습니다.</p>}</article>
         </div>
-        <aside><article className="design-card opinion-card"><div className="design-title"><h2>학생 의견 반영 현황</h2><Link to="/suggestions">전체 보기</Link></div>{[0, 1, 2, 3].map((item) => <p className="side-empty-row" key={item} aria-hidden="true" />)}</article><article className="design-card completed-card"><div className="design-title"><h2>선거 중 공약</h2><Link to="/progress">전체 보기</Link></div>{[0, 1, 2, 3].map((item) => <p className="side-empty-row" key={item} aria-hidden="true" />)}</article><article className="design-card completed-card"><div className="design-title"><h2>앞으로의 일정</h2><Link to="/progress">전체 일정 보기</Link></div>{[0, 1, 2, 3].map((item) => <p className="side-empty-row" key={item} aria-hidden="true" />)}</article></aside>
+        <aside><article className="design-card opinion-card"><div className="design-title"><h2>학생 의견 반영 현황</h2><Link to="/suggestions">제안하기</Link></div><p><span>접수</span>정책 제안은 담당자가 확인한 뒤 공약 검토 목록에 반영됩니다.</p><p><span>검토</span>학교 협의가 필요한 내용은 진행 상황에 검토 사유를 함께 공개합니다.</p><p><span>공개</span>반영 가능한 제안은 공약 진행 현황과 학생회 안내 채널에 공개합니다.</p></article><article className="design-card completed-card"><div className="design-title"><h2>선거 중 핵심 공약</h2><Link to="/progress">전체 보기</Link></div>{featuredItems.map((item) => <p key={item.id}><span>{item.status}</span>{item.title}</p>)}</article><article className="design-card completed-card"><div className="design-title"><h2>앞으로의 일정</h2><Link to="/suggestions">의견 보내기</Link></div><p><span>1단계</span>학생 의견 수렴 및 우선순위 정리</p><p><span>2단계</span>학교 측 협의와 실행 가능 범위 공개</p><p><span>3단계</span>진행 결과와 보류 사유까지 투명하게 공유</p></article></aside>
       </section>
     </div>
   )
