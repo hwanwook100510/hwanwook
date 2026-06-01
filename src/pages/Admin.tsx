@@ -17,6 +17,15 @@ const electionTarget = '바른생활부 차장 보궐선거'
 const electionCandidates = ['신의진', '문소연']
 const policyVoteTargets = ['자판기 설치', '전체 잔류일을 활용한 학예제 개최']
 
+async function loadAdminCollection(collectionName: string) {
+  try {
+    return await getDocs(collection(db!, collectionName))
+  } catch (error) {
+    const code = typeof error === 'object' && error && 'code' in error ? ` (${String(error.code)})` : ''
+    throw new Error(`${collectionName}${code}`, { cause: error })
+  }
+}
+
 function formatTime(value: FirestoreTime) {
   if (typeof value === 'string') return value
 
@@ -80,15 +89,15 @@ function Admin() {
 
       try {
         const [profileSnapshot, assignmentSnapshot, applicationSnapshot, suspensionSnapshot, evaluationSnapshot, suggestionSnapshot, authorSnapshot, voteSnapshot, pledgeSnapshot] = await Promise.all([
-          getDocs(collection(db!, 'studentProfiles')),
-          getDocs(collection(db!, 'clubRoleAssignments')),
-          getDocs(collection(db!, 'clubApplications')),
-          getDocs(collection(db!, 'suspendedUsers')),
-          getDocs(collection(db!, 'evaluationResponses')),
-          getDocs(collection(db!, 'policySuggestions')),
-          getDocs(collection(db!, 'policySuggestionAuthors')),
-          getDocs(collection(db!, 'voteRecords')),
-          getDocs(collection(db!, 'pledgeProgress')),
+          loadAdminCollection('studentProfiles'),
+          loadAdminCollection('clubRoleAssignments'),
+          loadAdminCollection('clubApplications'),
+          loadAdminCollection('suspendedUsers'),
+          loadAdminCollection('evaluationResponses'),
+          loadAdminCollection('policySuggestions'),
+          loadAdminCollection('policySuggestionAuthors'),
+          loadAdminCollection('voteRecords'),
+          loadAdminCollection('pledgeProgress'),
         ])
         const remoteProfiles = profileSnapshot.docs.map((item) => item.data() as StudentProfile)
         const remoteAssignments = assignmentSnapshot.docs.map((item) => item.data() as ClubRoleAssignment)
@@ -104,8 +113,9 @@ function Admin() {
         setSuggestionAuthors(authorSnapshot.docs.map((item) => item.data() as PolicySuggestionAuthor))
         setVoteRecords(voteSnapshot.docs.map((item) => item.data() as VoteRecord))
         setPledges(pledgeSnapshot.docs.map((item) => item.data() as PledgeProgress))
-      } catch {
-        setMessage('DB 데이터를 불러오지 못했습니다. DB 설정과 권한을 확인해주세요.')
+      } catch (error) {
+        const detail = error instanceof Error ? ` 막힌 위치: ${error.message}` : ''
+        setMessage(`DB 데이터를 불러오지 못했습니다. Firestore Rules와 Anonymous 로그인을 확인해주세요.${detail}`)
       } finally {
         setLoadingData(false)
       }

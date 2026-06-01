@@ -160,6 +160,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       createdAt: serverTimestamp(),
     })
 
+    const sessionSnapshot = await getDoc(doc(db, 'adminAccessSessions', currentUser.uid))
+
+    if (!sessionSnapshot.exists()) {
+      setError('관리자 세션을 확인하지 못했습니다. Firestore Rules 적용 상태를 확인해주세요.')
+      return false
+    }
+
     window.sessionStorage.setItem(ADMIN_CODE_SESSION_KEY, 'true')
     setAdminCodeAccepted(true)
     setError('')
