@@ -390,7 +390,7 @@ service cloud.firestore {
         && !exists(/databases/$(database)/documents/evaluationResponses/$(targetEmail))
         && validEvaluationCreate(request.resource.data, targetEmail);
       allow update: if false;
-      allow delete: if false;
+      allow delete: if isStudent() && isSelfEmail(targetEmail);
     }
 
     match /voteRecords/{voteId} {

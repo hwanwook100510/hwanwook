@@ -23,6 +23,11 @@ function scrollToTop() {
   window.scrollTo(0, 0)
 }
 
+function resizeTextarea(textarea: HTMLTextAreaElement) {
+  textarea.style.height = 'auto'
+  textarea.style.height = `${textarea.scrollHeight}px`
+}
+
 function App() {
   const { pathname } = useLocation()
 
@@ -50,6 +55,31 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    const resizeTarget = (event: Event) => {
+      if (event.target instanceof HTMLTextAreaElement) {
+        resizeTextarea(event.target)
+      }
+    }
+
+    const resizeAll = () => {
+      document.querySelectorAll('textarea').forEach((textarea) => resizeTextarea(textarea))
+    }
+    const observer = new MutationObserver(resizeAll)
+
+    resizeAll()
+    requestAnimationFrame(resizeAll)
+    observer.observe(document.body, { childList: true, subtree: true })
+    document.addEventListener('input', resizeTarget)
+    window.addEventListener('resize', resizeAll)
+
+    return () => {
+      observer.disconnect()
+      document.removeEventListener('input', resizeTarget)
+      window.removeEventListener('resize', resizeAll)
+    }
+  }, [pathname])
+
   return (
     <Layout>
       <Suspense fallback={<div className="auth-card route-loading"><p>페이지를 불러오고 있습니다.</p></div>}>
@@ -58,7 +88,7 @@ function App() {
           <Route path="/members" element={<Members />} />
           <Route path="/login" element={<Login />} />
           <Route path="/mypage" element={<ProtectedRoute><MyPage /></ProtectedRoute>} />
-          <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+          <Route path="/admin" element={<ProtectedRoute requireAdmin><Admin /></ProtectedRoute>} />
           <Route path="/club-dashboard" element={<ProtectedRoute><ClubDashboard /></ProtectedRoute>} />
           <Route path="/register" element={<Register />} />
           <Route path="/evaluation" element={<Evaluation />} />

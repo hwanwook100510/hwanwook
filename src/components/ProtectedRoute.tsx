@@ -1,16 +1,20 @@
 import type { ReactNode } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import AuthButton from './AuthButton'
 import { useAuth } from '../contexts/useAuth'
 import { useStudentProfile } from '../hooks/useStudentProfile'
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
+function ProtectedRoute({ children, requireAdmin = false }: { children: ReactNode, requireAdmin?: boolean }) {
   const { user, isAdmin, loading } = useAuth()
   const { profile, loading: profileLoading } = useStudentProfile()
   const location = useLocation()
 
   if (loading) {
     return <div className="auth-card"><p>로그인 상태를 확인하고 있습니다.</p></div>
+  }
+
+  if (requireAdmin && (!user || !isAdmin)) {
+    return <Navigate to="/" replace />
   }
 
   if (!user) {

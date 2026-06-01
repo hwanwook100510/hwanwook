@@ -53,6 +53,7 @@ a { color: inherit; text-decoration: none; }
 img, svg { max-width: 100%; }
 button, input, textarea, select { font: inherit; }
 input, textarea { caret-color: auto; }
+textarea { resize: none; overflow: hidden; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.62; }
 h1, h2, h3, p { margin-top: 0; }
@@ -254,7 +255,7 @@ main { width: min(var(--container), calc(100% - 40px)); margin: 0 auto; flex: 1;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
 }
 .form-card input::placeholder, .form-card textarea::placeholder { color: #9a6f86; }
-.form-card textarea { resize: vertical; min-height: 118px; }
+.form-card textarea { min-height: 118px; }
 .form-card input:focus, .form-card textarea:focus, .form-card select:focus, .admin-row select:focus { border-color: #f6a3cb; background: white; box-shadow: var(--focus); }
 .form-card input[type='range'] { padding: 0; accent-color: var(--blue); background: transparent; }
 .form-card label > strong { color: var(--navy); }
@@ -570,6 +571,7 @@ main:has(.design-page) { width: 100%; }
 .eval-form { display: grid; gap: 14px; background: linear-gradient(135deg,#fff,#f8fafc); }
 .eval-form label, .suggestion-form label { display: grid; gap: 14px; color: #33343a; font-weight: 850; }
 .eval-form input, .suggestion-form input, .suggestion-form textarea, .suggestion-form select { width: 100%; border: 1px solid #eee3e8; border-radius: 8px; padding: 12px; }
+.suggestion-form textarea { min-height: 118px; }
 .eval-form input[type='range'] { height: 20px; border: 0; border-radius: 999px; padding: 0; appearance: none; background: linear-gradient(90deg, #9b58c7 var(--value), #e5e7eb 0); background-size: 100% 6px; background-repeat: no-repeat; background-position: center; }
 .eval-form input[type='range']::-webkit-slider-runnable-track { height: 6px; border-radius: 999px; background: transparent; }
 .eval-form input[type='range']::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -5px; border: 0; border-radius: 999px; appearance: none; background: #9b58c7; box-shadow: 0 4px 12px rgba(88, 38, 130, .22); }
