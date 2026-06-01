@@ -332,7 +332,7 @@ service cloud.firestore {
         && data.suspendedAt is timestamp
         && data.suspendedBy is string
         && data.email == targetEmail
-        && data.suspendedBy == email()
+        && (data.suspendedBy == email() || (hasAdminAccessSession() && data.suspendedBy == 'admin'))
         && isRequestTime(data.suspendedAt);
     }
 
