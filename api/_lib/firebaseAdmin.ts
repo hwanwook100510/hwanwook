@@ -1,6 +1,6 @@
 import { createHmac } from 'node:crypto'
 import type { IncomingMessage, ServerResponse } from 'node:http'
-import { getApps, initializeApp, cert } from 'firebase-admin/app'
+import { applicationDefault, getApps, initializeApp, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { FieldValue, getFirestore } from 'firebase-admin/firestore'
 
@@ -20,13 +20,20 @@ function initAdminApp() {
   if (getApps().length > 0) return
 
   const rawServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+  const base64ServiceAccount = process.env.FIREBASE_SERVICE_ACCOUNT_BASE64
 
-  if (!rawServiceAccount) {
-    initializeApp()
+  if (base64ServiceAccount) {
+    const decoded = Buffer.from(base64ServiceAccount, 'base64').toString('utf8')
+    initializeApp({ credential: cert(JSON.parse(decoded)) })
     return
   }
 
-  initializeApp({ credential: cert(JSON.parse(rawServiceAccount)) })
+  if (rawServiceAccount) {
+    initializeApp({ credential: cert(JSON.parse(rawServiceAccount)) })
+    return
+  }
+
+  initializeApp({ credential: applicationDefault() })
 }
 
 initAdminApp()

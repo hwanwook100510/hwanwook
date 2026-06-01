@@ -2,8 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { browserLocalPersistence, getRedirectResult, onAuthStateChanged, setPersistence, signInWithPopup, signInWithRedirect, signOut } from 'firebase/auth'
 import type { User } from 'firebase/auth'
-import { doc, getDoc } from 'firebase/firestore'
-import { auth, db, googleProvider, isFirebaseConfigured } from '../firebase'
+import { auth, googleProvider, isFirebaseConfigured } from '../firebase'
 import { normalizeEmail } from '../utils/permissions'
 import { AuthContext } from './authState'
 import type { AuthContextValue } from './authState'
@@ -54,16 +53,6 @@ function shouldTryRedirectLogin(error: unknown) {
     || code.includes('internal-error')
 }
 
-async function isSuspendedUser(user: User | null) {
-  if (!db || !user?.uid || isAllowedEmail(user.email) === false) {
-    return false
-  }
-
-  const snapshot = await getDoc(doc(db, 'suspendedUsers', user.uid))
-
-  return snapshot.exists() && snapshot.data().enabled === true
-}
-
 async function loadAuthStatus(user: User | null): Promise<AuthStatus> {
   if (!user) {
     return {}
@@ -105,16 +94,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setIsAdmin(false)
         setError(`${DOMAIN_ERROR} 선택한 계정: ${currentUser.email ?? '확인 불가'}`)
-        await signOut(activeAuth)
-        if (mounted) setLoading(false)
-        return
-      }
-
-      if (currentUser && await isSuspendedUser(currentUser)) {
-        if (!mounted) return
-        setUser(null)
-        setIsAdmin(false)
-        setError('')
         await signOut(activeAuth)
         if (mounted) setLoading(false)
         return
@@ -171,14 +150,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setIsAdmin(false)
         setError(`${DOMAIN_ERROR} 선택한 계정: ${result.user.email ?? '확인 불가'}`)
-        await signOut(auth)
-        return
-      }
-
-      if (await isSuspendedUser(result.user)) {
-        setUser(null)
-        setIsAdmin(false)
-        setError('정지된 계정입니다. 관리자에게 문의해주세요.')
         await signOut(auth)
         return
       }

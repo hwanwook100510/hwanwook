@@ -52,6 +52,7 @@ body {
 a { color: inherit; text-decoration: none; }
 img, svg { max-width: 100%; }
 button, input, textarea, select { font: inherit; }
+input, textarea, select, [contenteditable="true"] { caret-color: auto; }
 input, textarea { caret-color: auto; }
 textarea { resize: none; overflow: hidden; }
 button { cursor: pointer; }
@@ -361,7 +362,7 @@ body:has(.home-page) { background: #fff; }
 .campaign-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; align-items: center; margin-top: 34px; padding: 26px; border: 1px solid #eee3e8; border-radius: 18px; background: linear-gradient(135deg,#fff,#fff7fb 58%,#f5f8ff); box-shadow: var(--shadow-subtle); }
 .campaign-banner span { display: inline-flex; margin-bottom: 9px; color: var(--blue); font-size: .86rem; font-weight: 950; letter-spacing: .02em; }
 .campaign-banner h2 { margin: 0 0 8px; color: var(--navy); font-size: clamp(1.45rem,2.6vw,2.2rem); }
-.campaign-banner p { margin: 0; color: #4b4f58; font-weight: 850; }
+.campaign-banner p { margin: 0; color: #4b4f58; font-family: Georgia, 'Times New Roman', serif; font-size: clamp(1.05rem,1.8vw,1.28rem); font-weight: 700; letter-spacing: -.02em; }
 .campaign-banner-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
 .campaign-banner-actions .home-solid-button, .campaign-banner-actions .home-outline-button { width: auto; min-width: 160px; }
 .home-top-grid { display: grid; grid-template-columns: .9fr 1.05fr; gap: 28px; margin-top: 36px; }
