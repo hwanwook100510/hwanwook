@@ -357,7 +357,13 @@ body:has(.home-page) { background: #fff; }
 .home-hero p { margin: 0 0 8px; color: #3d4048; font-size: 1.05rem; }
 .home-hero .home-outline-button { margin-top: 28px; min-width: 150px; }
 
-.home-top-grid, .home-section, .home-lower-grid, .quick-section { width: min(1160px, calc(100% - 80px)); margin-left: auto; margin-right: auto; }
+.home-top-grid, .home-section, .home-lower-grid, .quick-section, .campaign-banner { width: min(1160px, calc(100% - 80px)); margin-left: auto; margin-right: auto; }
+.campaign-banner { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 22px; align-items: center; margin-top: 34px; padding: 26px; border: 1px solid #eee3e8; border-radius: 18px; background: linear-gradient(135deg,#fff,#fff7fb 58%,#f5f8ff); box-shadow: var(--shadow-subtle); }
+.campaign-banner span { display: inline-flex; margin-bottom: 9px; color: var(--blue); font-size: .86rem; font-weight: 950; letter-spacing: .02em; }
+.campaign-banner h2 { margin: 0 0 8px; color: var(--navy); font-size: clamp(1.45rem,2.6vw,2.2rem); }
+.campaign-banner p { margin: 0; color: #4b4f58; font-weight: 850; }
+.campaign-banner-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.campaign-banner-actions .home-solid-button, .campaign-banner-actions .home-outline-button { width: auto; min-width: 160px; }
 .home-top-grid { display: grid; grid-template-columns: .9fr 1.05fr; gap: 28px; margin-top: 36px; }
 .home-top-grid > article { min-height: 330px; padding: 22px; }
 .home-notice-list { display: grid; gap: 0; margin: 22px 0 0; padding: 0; list-style: none; }
@@ -374,7 +380,9 @@ body:has(.home-page) { background: #fff; }
 .vote-card p span, .policy-status { display: inline-flex; margin-right: 8px; border-radius: 999px; padding: 5px 9px; color: white; background: #f72e7d; font-size: 0.78rem; font-weight: 900; }
 .vote-card small { color: #9a9aa2; }
 .vote-bars { display: grid; gap: 14px; margin: 26px 0 24px; }
-.vote-empty-box { min-height: 190px; }
+.vote-empty-box { display: grid; align-content: center; justify-items: center; min-height: 190px; margin: 24px 0; border: 1px dashed #f3bfd7; border-radius: 12px; padding: 26px 18px; text-align: center; background: linear-gradient(135deg,#fffafd,#fff); }
+.vote-empty-box strong { color: var(--navy); font-size: 1.05rem; }
+.vote-empty-box p { max-width: 360px; margin: 8px 0 0; color: var(--muted); font-size: .92rem; font-weight: 700; }
 .vote-row div { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 8px; color: #33343a; font-size: 0.9rem; }
 .vote-row { position: relative; }
 .vote-row::after { content: ''; display: block; width: 100%; height: 0.45rem; border-radius: 999px; background: #f1edf0; }
@@ -572,8 +580,9 @@ main:has(.design-page) { width: 100%; }
 .eval-form label, .suggestion-form label { display: grid; gap: 14px; color: #33343a; font-weight: 850; }
 .suggestion-form-fields { display: flex; flex-direction: column; gap: 20px; }
 .suggestion-form-fields .text-area-group { margin-bottom: 4px; }
-.suggestion-anonymous { display: flex!important; align-items: center; gap: 10px; min-height: 48px; width: fit-content; margin-top: 8px; padding: 12px 16px; }
+.suggestion-anonymous { display: flex!important; flex-direction: row!important; align-items: center; justify-content: center; gap: 12px; flex: 0 0 auto; width: 100%; max-width: none; min-height: 64px; margin: 8px 0 0; padding: 14px 18px; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; }
 .suggestion-anonymous input { flex: 0 0 auto; width: 18px; height: 18px; margin: 0; }
+.suggestion-anonymous .anonymous-label { display: inline-block; min-width: max-content; white-space: nowrap; word-break: keep-all; overflow-wrap: normal; line-height: 1.3; }
 .suggestion-submit { align-self: flex-start; margin-top: 14px; }
 .eval-form input, .suggestion-form input, .suggestion-form textarea, .suggestion-form select { width: 100%; border: 1px solid #eee3e8; border-radius: 8px; padding: 12px; }
 .suggestion-form textarea { min-height: 118px; }
@@ -736,8 +745,11 @@ main:has(.design-page) { width: 100%; }
   .progress-table { border: 0; overflow: visible; background: transparent; }
   .footer { flex-direction: column; text-align: center; }
   .home-hero { min-height: auto; padding: 70px 0; background-size: auto, 440px, cover; background-position: center, right -90px center, center; }
-  .home-hero-copy, .home-top-grid, .home-section, .home-lower-grid, .quick-section { width: min(100% - 28px, var(--container)); }
+  .home-hero-copy, .home-top-grid, .home-section, .home-lower-grid, .quick-section, .campaign-banner { width: min(100% - 28px, var(--container)); }
   .home-top-grid, .home-lower-grid, .policy-grid { grid-template-columns: 1fr; }
+  .campaign-banner { grid-template-columns: 1fr; }
+  .campaign-banner-actions { justify-content: stretch; }
+  .campaign-banner-actions .home-solid-button, .campaign-banner-actions .home-outline-button { width: 100%; }
   .policy-carousel .policy-card { flex-basis: 100%; }
   .home-top-grid > article { min-height: auto; }
   .home-promise-card { min-height: 280px; }
@@ -778,7 +790,7 @@ main:has(.design-page) { width: 100%; }
   .brand strong { font-size: 1rem; }
   .brand small { display: none; }
   .home-hero { padding: 56px 0; background-image: linear-gradient(90deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.78)), url('/dimigo-logo.jpg'), linear-gradient(135deg, #f7fbff, #ffe5f1); background-size: auto, 320px, cover; background-position: center, right -110px center, center; }
-  .home-hero-copy, .home-top-grid, .home-section, .home-lower-grid, .quick-section { width: min(100% - 20px, var(--container)); }
+  .home-hero-copy, .home-top-grid, .home-section, .home-lower-grid, .quick-section, .campaign-banner { width: min(100% - 20px, var(--container)); }
   .home-hero h1 { font-size: clamp(2.2rem, 12vw, 3.2rem); }
   .home-card-head, .home-section-head { align-items: flex-start; flex-direction: column; gap: 8px; }
   .home-notice-list li { grid-template-columns: 1fr; gap: 4px; }

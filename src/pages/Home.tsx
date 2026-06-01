@@ -101,6 +101,18 @@ function Home() {
         </div>
       </section>
 
+      <section className="campaign-banner" aria-label="학생회장 선거 캠페인 안내">
+        <div>
+          <span>박동우 · 정환욱</span>
+          <h2>일하는 학생회, 행동하는 학생회</h2>
+          <p>디미고의 오늘을 만들고 내일을 바꾸겠습니다.</p>
+        </div>
+        <div className="campaign-banner-actions">
+          <a className="home-solid-button" href="https://hwanwook-election-pledge.vercel.app/" target="_blank" rel="noreferrer">공약 자세히 보기</a>
+          <Link className="home-outline-button" to="/suggestions">정책 제안하기</Link>
+        </div>
+      </section>
+
       <section className="home-top-grid" aria-label="주요 안내">
         <article className="home-promise-card">
           <span>우리의 약속</span>
@@ -114,7 +126,10 @@ function Home() {
             <h2>오늘의 투표</h2>
             <Link to="/vote">더보기</Link>
           </div>
-          <div className="vote-empty-box" aria-hidden="true" />
+          <div className="vote-empty-box">
+            <strong>현재 진행 중인 투표가 없습니다.</strong>
+            <p>새로운 투표가 열리면 이곳에서 바로 참여할 수 있습니다.</p>
+          </div>
           <Link className="home-solid-button" to="/vote">투표하러 가기</Link>
         </article>
       </section>
